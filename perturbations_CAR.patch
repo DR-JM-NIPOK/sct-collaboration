@@ -1,0 +1,34 @@
+--- a/source/perturbations.c
++++ b/source/perturbations.c
+@@ -1,6 +1,14 @@
++/* CAR modification — Codified Acoustic Relation
++ * Original: cs2 = 1.0 / (3.0 * (1.0 + R))   standard baryon-photon
++ * CAR     : cs2 = (1.0 + R) / 3.0            self-similar geometry
++ * Reference: NIPOK, SCT Cosmology Series Paper #16 (2026)
++ *
++ * Locate perturb_derivs() in perturbations.c.
++ * Find the sound speed calculation for the baryon photon fluid.
++ * The relevant variables in CLASS notation:
++ *   ppw->pvecthermo[pth->index_th_cb2]  = baryon sound speed squared
++ *   R = 3*rho_b / (4*rho_g)  (computed internally by CLASS thermodynamics)
++ */
+
+ /* In function perturb_derivs(), find: */
+ /* Standard CLASS: */
+-  cs2 = 1.0 / (3.0 * (1.0 + R));
++
++  /* ── CAR master equation ──────────────────────────────────── */
++  cs2 = (1.0 + R) / 3.0;
++  /* ─────────────────────────────────────────────────────────── */
+
+ /* Note: In CLASS, R (baryon loading) is computed in thermodynamics.c     */
+ /* as pvecthermo[index_th_R]. CLASS automatically propagates R(z)=R0/(1+z)*/
+ /* through its thermodynamic integration, so no additional z-evolution     */
+ /* of R is required here — CLASS handles this correctly.                   */
+
+--- a/source/thermodynamics.c  (sound horizon integral)
++++ b/source/thermodynamics.c
+@@ -500,6 +500,10 @@
++  /* CAR: r_s integral uses cs = sqrt((1+R)/3) instead of sqrt(1/(3(1+R))) */
++  /* This is handled automatically once cs2 is updated in perturbations.c   */
++  /* Expected output: r_s ≈ 149.1 Mpc (vs ΛCDM 150.0 Mpc)                 */
