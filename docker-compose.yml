@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  sct-car:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: sct-cosmology:latest
+    container_name: sct-car-analysis
+    volumes:
+      - ../output:/output
+      - ../data:/sct/data:ro    # mount real data as read-only if available
+    environment:
+      - OUTPUT_DIR=/output
+      - NTHREADS=4
+    command: >
+      bash -c "
+        echo 'SCT Cosmology — CAR Analysis Container' &&
+        python sct_core.py &&
+        python data/mock_data_generator.py --output /output/data/ &&
+        bash chains/run_chains.sh --model car --data combined --output /output
+      "
+
+  sct-figures:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: sct-cosmology:latest
+    container_name: sct-figures
+    volumes:
+      - ../output:/output
+    command: >
+      bash -c "
+        python figures/make_all_figures.py --output /output/figures/ --format pdf
+      "
+
+  sct-verify:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: sct-cosmology:latest
+    container_name: sct-verify
+    command: >
+      bash -c "
+        echo '=== Verification Run ===' &&
+        python sct_core.py &&
+        python camb/equations_car_test.py &&
+        python class/class_car_test.py &&
+        python -m pytest tests/ -v &&
+        echo '=== All checks passed ==='
+      "
