@@ -1,39 +1,24 @@
 """
-likelihoods/__init__.py
-========================
-SCT Cosmology likelihood modules for the Codified Acoustic Relation (CAR).
+likelihoods/__init__.py — Likelihood module initialization
+SCT Cosmology Series | DR JM NIPOK (2026)
 
-Available likelihoods
----------------------
-    DESIDR2BAOLikelihood        : DESI-DR2 BAO (32 measurements)
-    DESY6ThreeTwoPointLikelihood: DES-Y6 3×2pt weak lensing (1800 elements)
-    HSCY3WeakLensingLikelihood  : HSC-Y3 cosmic shear (576 elements)
-    KiDSDR5WeakLensingLikelihood: KiDS-DR5 weak lensing (912 elements)
-    PlanckPR4CMBLikelihood      : Planck PR4 compressed CMB (86 params)
-
-Usage
------
-    from likelihoods import DESIDR2BAOLikelihood
-    from sct_core import CAR_predictions
-
-    params = CAR_predictions()
-    lik    = DESIDR2BAOLikelihood()
-    lnL    = lik.log_like(params)
-    chi2   = lik.chi2(params)
+FIXES IN v2.0:
+  - Import corrected to match actual filename plank_cmb.py
+    (the file has a historical typo — missing 'n' — preserved for
+     backwards compatibility; imports updated to match)
 """
 
-from .car_likelihood_base        import CARLikelihoodBase
-from .desi_dr2_bao               import DESIDR2BAOLikelihood
-from .des_y6_3x2pt               import DESY6ThreeTwoPointLikelihood
-from .hsc_y3_wl                  import HSCY3WeakLensingLikelihood
-from .kids_dr5_wl                import KiDSDR5WeakLensingLikelihood
-from .planck_pr4_cmb             import PlanckPR4CMBLikelihood
+from .desi_bao import DESI_BAO_Likelihood
+from .des_y6_lensing import DES_Y6_Likelihood
+from .hsc_kids_lensing import HSC_KiDS_Likelihood
+from .plank_cmb import Planck_Likelihood          # file is plank_cmb.py (no 'n')
+from .combined_likelihood import CombinedLikelihood, car_loglike
 
 __all__ = [
-    'CARLikelihoodBase',
-    'DESIDR2BAOLikelihood',
-    'DESY6ThreeTwoPointLikelihood',
-    'HSCY3WeakLensingLikelihood',
-    'KiDSDR5WeakLensingLikelihood',
-    'PlanckPR4CMBLikelihood',
+    'DESI_BAO_Likelihood',
+    'DES_Y6_Likelihood',
+    'HSC_KiDS_Likelihood',
+    'Planck_Likelihood',
+    'CombinedLikelihood',
+    'car_loglike',
 ]
