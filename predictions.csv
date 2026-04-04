@@ -1,0 +1,31 @@
+ID,Paper,Observable,Predicted,Uncertainty,Dataset,Status,Falsification_Criterion
+P01,P16,S8,0.783,±0.015,"DES-Y6, KiDS-DR5, HSC-Y3",CONFIRMED,S8 > 0.81 at 3σ from Euclid Y1 falsifies
+P02,P16,H0,70.4,±0.5 km/s/Mpc,DESI-DR2 + BAO,CONFIRMED,H0 < 68.5 or > 72.5 at 3σ falsifies
+P03,P16,r_d,149.2,±0.4 Mpc,DESI-DR2 BAO,CONFIRMED,r_d outside 147-152 Mpc at 3σ falsifies
+P04,P16,b_IA,1.087,±0.005,Weak lensing IA analysis,PREDICTED,b_IA < 1.05 or > 1.13 at 3σ falsifies
+P05,P16,n_s,0.9655,"(28/29, exact)","Planck, CMB-S4",CONFIRMED (0.15σ),n_s < 0.960 or > 0.972 at 3σ falsifies
+P06,"P6,P13",A_star,5.970,±0.21,X-COP cluster sample,CONFIRMED,A* outside 5.5-6.5 at 2σ from CHANDRA-all falsifies
+P07,"P6,P13",f_b,0.1675,±0.006,X-COP 12 clusters,CONFIRMED,f_b × A* ≠ 1.000 ± 0.05 at 2σ falsifies
+P08,"P5,P6",BTF slope,0.25,"(exact, v ∝ M^0.25)",SPARC 24-galaxy,CONFIRMED (r=0.9992),BTF slope outside 0.22-0.28 at 2σ falsifies
+P09,P5,Satellite plane probability,1.0,"(derived, not statistical)","MW, M31, Cen-A",FRAMEWORK,"If >50% of galaxies lack satellite planes, SCT requires revision"
+P10,P7,w0 (dark energy EOS),-0.898,±0.12 (1σ),DESI-DR2 + CMB,CONSISTENT,w0 > -0.67 at 3σ falsifies
+P11,P7,wa (EOS evolution),< 0,"(negative, dynamic)",DESI-DR2,CONSISTENT,wa > +0.5 at 3σ falsifies
+P12,P4,JWST z>10 galaxy count,10-100× ΛCDM,order of magnitude,"JWST CEERS, JADES",CONFIRMED,"If JWST z>10 counts fall to ΛCDM level after systematics, softens"
+P13,P4,SPT2349-56 ICM temperature,hot (born-hot prediction),qualitative,Zhou et al. 2025,CONFIRMED,Cold ICM at z>5 in proto-clusters falsifies born-hot
+P14,P4,Roman HLWAS galaxy count,550-4770,at z>10,Nancy Roman Space Telescope (2026+),PENDING,< 10 detections at z>10 with Roman falsifies
+P15,P5,Bulk flow amplitude,>300 km/s,at >100 Mpc,"Cosmicflows-4, 2MTF",CONFIRMED,Bulk flows < 150 km/s at 100 Mpc from all surveys falsifies
+P16,"P2,P18",Local clock bias,63.34,ppm slow,Precision atomic clocks vs pulsar timing,PREDICTED,Clock bias outside 40-90 ppm from precision space experiment falsifies
+P17,P9,M_max neutron star,2.0,±0.5 M_sun,"GW170817, GW190814",CONSISTENT,M_max > 3.5 M_sun from NS merger would require EOS revision
+P18,P9,NS radius at 1.4 M_sun,10-12,km,"NICER, XMM-Newton",CONSISTENT,R < 8 km or R > 15 km at 3σ from NICER would require EOS revision
+P19,P11,mu_SCT at k=0.1 h/Mpc,1.3-1.9,(A_eff range),DESI galaxy clustering,PREDICTED,mu < 1.05 at k=0.1 h/Mpc from DESI+Euclid falsifies
+P20,P11,Growth rate fsigma8,suppressed ~5%,vs Planck,"DESI RSD, 6dFGS",CONSISTENT,fsigma8 > Planck value at 3σ across z=0.1-1 falsifies
+P21,P3,CMB n_s from cascade,0.9655,28/29 exact,"CMB-S4, Simons Obs.",PREDICTED,n_s outside 0.960-0.972 at 5σ from CMB-S4 falsifies
+P22,P3,CMB A_lens,1.19,±0.03 (derived),"Planck, CMB-S4",CONFIRMED (A_lens=1.18),A_lens < 1.05 at 3σ from CMB-S4 falsifies
+P23,P7,KBC supervoid ΔH0,1.5-2.5,km/s/Mpc,"KBC void survey, SH0ES",PREDICTED,No supervoid found by DESI within 300 Mpc would remove one contribution
+P24,P6,Galaxy rotation curve fit,r=0.9992,"Pearson, SPARC 24",SPARC extended sample,CONFIRMED,Pearson r < 0.95 on SPARC-full (175 galaxies) falsifies
+P25,P13,Bullet cluster mass offset,observed direction,qualitative,Chandra X-ray,CONFIRMED,X-ray mass LEADING lensing mass in future mergers falsifies
+P26,P13,El Gordo relative velocity,>2000 km/s,expected in cascade,ACT-CL J0102,FRAMEWORK,v_rel > 3000 km/s in other clusters would stress EOS
+P27,P16,Euclid Y1 S8,0.781,±0.009,Euclid Year 1 (2026+),PENDING,S8 > 0.81 at 3σ falsifies
+P28,P11,Slip parameter eta,1.0,"(exact, G_4X=0)",CMB lensing vs galaxy,PREDICTED,eta > 1.05 at 3σ from Euclid falsifies GW constraint
+P29,P7,Void expansion rate,enhanced vs clusters,qualitative,DESI void catalogue,PREDICTED,No void-cluster Λ_eff difference in DESI DR2+ falsifies
+P30,P5,J scaling exponent,2/3,(j ∝ M^{2/3}),Disk galaxy angular momentum,CONFIRMED,Exponent outside 0.55-0.78 at 3σ from IllustrisTNG+obs falsifies

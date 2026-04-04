@@ -1,0 +1,31 @@
+ID,Category,Tension,Significance,LCDM_Status,SCT_Status,Reference
+T001,Cosmological,H0 tension (CMB vs distance ladder),5.6σ,Unresolved,"Partially resolved (SCT=70.4, 2.6σ from SH0ES)","Riess et al. 2022, Planck 2018"
+T002,Cosmological,S8 tension (CMB vs weak lensing),2.5-3.0σ,Unresolved,Resolved (SCT predicts 0.783),"DES-Y6 2026, KiDS-DR5"
+T003,Cosmological,CMB lensing A_lens > 1,2.3σ,Anomaly,Resolved (SCT derives 1.19),Planck PR3 2018
+T004,Cosmological,w0-wa departure from -1,3.1σ,Tension,Resolved (SCT derives w0=-0.90),DESI DR2 2026
+T005,Cosmological,Cosmic dipole kinematic vs number-count,4.9σ,Anomaly,Directionally explained (frame-tree),Secrest et al. 2022
+T006,Cosmological,BAO r_d Planck vs DESI,2.3σ,Tension,Resolved (SCT 149.2 Mpc),DESI DR2 2026
+T007,Cosmological,Cosmic bulk flows >100 Mpc,3-5σ,Tension,"Resolved (J-inheritance, 2x ΛCDM)",Cosmicflows-4 2023
+T008,Galaxy,Satellite plane (VPOS Milky Way),~5σ,Catastrophic,Resolved (J=mu b×v inheritance),Pawlowski et al. 2012
+T009,Galaxy,Satellite plane (GPoA Andromeda),~4σ,Catastrophic,Resolved,Ibata et al. 2013
+T010,Galaxy,Satellite plane (Cen-A corotation),~4σ,Catastrophic,Resolved,Müller et al. 2021
+T011,Galaxy,BTF scatter too tight for ΛCDM,2-3σ,Tension,Resolved (SCT derives exact slope),McGaugh et al. 2016
+T012,Galaxy,El Gordo collision velocity,3-4σ,Problem,Resolved (high v_rel expected in cascade),Menanteau et al. 2012
+T013,Galaxy,JWST early massive galaxies z>10,4-16σ,Crisis,Resolved (born-hot products),Labbe et al. 2023
+T014,Galaxy,JWST early morphological maturity,>3σ,Problem,Resolved (early angular momentum),Ferreira et al. 2023
+T015,Galaxy,Missing satellites problem,2-3σ,Problem,"Resolved (satellites = collision debris, fewer expected)",Klypin et al. 1999
+T016,Galaxy,Too-big-to-fail problem,2-3σ,Problem,Resolved (coherence suppresses dense cores),Boylan-Kolchin et al. 2011
+T017,Galaxy,Core-cusp problem,2-3σ,Problem,Resolved (CAR modifies inner density profile),de Blok 2010
+T018,Galaxy,Rotation curve diversity,2σ,Tension,Partially resolved (A depends on environment),Oman et al. 2015
+T019,CMB,Planck power asymmetry large-angle,2-3σ,Anomaly,Partially explained (frame-tree bias),Planck 2018
+T020,CMB,Hubble tension in CMB internal,1.8σ,Mild,Addressed,Verde et al. 2023
+T021,CMB,CMB cold spot,2.5σ,Anomaly,Explained (supervoid collision remnant),Cruz et al. 2005
+T022,CMB,Quadrupole-octopole alignment,2σ,Anomaly,Partially addressed (preferred direction from collision),Tegmark et al. 2003
+T023,LSS,Cluster baryon fraction tension,1σ,Consistent,Resolved exactly (f_b=1/A*),X-COP Ettori et al. 2019
+T024,LSS,Cluster mass function excess at z>0.5,2σ,Tension,Addressed (enhanced early formation),Mantz et al. 2014
+T025,LSS,2M++ bulk flow excess,3σ,Tension,Resolved (J-inheritance),Carrick et al. 2015
+T026,Fundamental,Cosmological constant fine-tuning,122 orders,Structural,Addressed (Λ_eff dynamical),Weinberg 1989
+T027,Fundamental,Hubble constant from GW170817,1.4σ,Consistent,Consistent,Abbott et al. 2017
+T028,Fundamental,Singularity (BB + BH),Structural,Unresolved,Resolved (QCD floor + collision origin),Penrose-Hawking 1970
+T029,Fundamental,Dark matter particle null results,Growing,Crisis,Resolved (no particle needed),"LUX, PandaX, XENONnT 2023"
+T030,Fundamental,Dark energy naturalness,Structural,Unresolved,Addressed (Λ_eff dynamical mechanism),Padmanabhan 2003

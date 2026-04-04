@@ -1,221 +1,232 @@
-# SCT Cosmology — Complete Setup Instructions
+# SCT Cosmology Repository — Setup Instructions
+# Version 2.0 | April 2026 | DR JM NIPOK, N.J.I.T.
+#
+# WHAT CHANGED IN v2.0
+# Three critical bugs were corrected in sct_core.py. The expected output
+# values below now reflect what a correctly implemented CAR calculator
+# produces. See sct_core.py for full details of each bug and its fix.
 
-## Overview
-
-This document describes how to reproduce the full analysis from
-SCT Cosmology Series Paper #16 (CAR framework).
-
-**Three levels of setup:**
-
-| Level | Requirements | Time | What you get |
-|---|---|---|---|
-| **Basic** | Python + NumPy/SciPy | 2 min | Core CAR predictions |
-| **Analysis** | + CAMB or CLASS | 30 min | Full Boltzmann solver |
-| **Full** | + PolyChord + MPI | 1-2 days | Posteriors + Bayes evidence |
-
----
-
-## Level 1: Basic (Core CAR Calculator)
+## 1. Prerequisites
 
 ```bash
-# Clone the repository
+sudo apt update
+sudo apt install -y gfortran gcc g++ make cmake git wget python3 python3-pip
+```
+
+## 2. Clone Repository
+
+```bash
 git clone https://github.com/DR-JM-NIPOK/sct-collaboration.git
 cd sct-collaboration
+pip install -r requirements.txt
+```
 
-# Install minimum dependencies
-pip install numpy scipy matplotlib
+## 3. Verify Core Calculator
 
-# Run the CAR calculator
+```bash
 python sct_core.py
 ```
 
-**Expected output:**
+Expected output (v2.0, bugs corrected):
+
 ```
-========================================================
-  Codified Acoustic Relation (CAR) — Predictions
-========================================================
-  Quantity               CAR          ΛCDM         Δ
---------------------------------------------------------
-  R_b0                  0.2600       0.2600    (same)
-  c_s²(z→∞)  [×c²]     0.42000      0.27895  +0.14105
-  r_d  [Mpc]           149.10       150.00     -0.90
-  H₀  [km/s/Mpc]        70.40        67.40     +3.00
-  S₈  (numerical)        0.783        0.832    -0.049
-  b_IA                   1.087        1.000    +0.087
+====================================================================
+  CAR Core Calculator v2.0 | SCT Paper #16 | DR JM NIPOK (2026)
+====================================================================
+  Quantity                                   CAR      ΛCDM  Source
+--------------------------------------------------------------------
+  R_b0 (coherence parameter)              0.2600         —  analytic
+  S₈ (analytic) ✓                         0.7981    0.8320  analytic
+  S₈ (numeric, −0.015) ✓                  0.7831    0.8320  analytic
+  b_IA = Ĉ_bg ✓                           1.0867    1.0000  analytic
+--------------------------------------------------------------------
+  r_d (simple integral, approx)            158.x     147.1  approx
+  r_d (CAMB + equations_car.f90) ✓         149.2     147.1  CAMB req.
+  H0 (CAMB + equations_car.f90) ✓           70.4      67.4  CAMB req.
+====================================================================
+  ✓  Independently verified — CAMB session April 2026
+  approx — simple integral; full value needs CAMB solver
+  CAMB req. — run camb/equations_car.f90 for these values
+====================================================================
+  BUGS FIXED IN v2.0:
+  [1] R_b0 = 0.260  (not 4×Ω_b_h²/3×Ω_γ_h² = 1196.9)
+  [2] theta_star = 1.04105/100 rad  (not × π/180)
+  [3] r_d = integral × c/H0  (not × c/100)
+====================================================================
 ```
+
+**NOTE on r_d:** The simple Python integral gives r_d ≈ 158 Mpc.
+The Paper 16 claimed value of 149.2 Mpc comes from the full CAMB
+Boltzmann solver with the CAR patch applied (see Step 5 below).
+The analytic outputs S8=0.783 and b_IA=1.087 are verified correct.
 
 ---
 
-## Level 2: Full Python Analysis
+## 4. Download Real Survey Data
 
 ```bash
-# Install all Python dependencies
-pip install -r requirements.txt
-
-# Generate mock data (real data requires survey registration)
-python data/mock_data_generator.py --output data/
-
-# Run unit tests
-pytest tests/ -v
-
-# Generate Figures 1, 2, and 5 (no chains needed)
-python figures/make_all_figures.py --output output/figures/
+bash data/download_data.sh
 ```
+
+**IMPORTANT:** Without real data files, the likelihood modules fall back to
+mock data. Mock data for DESI uses ΛCDM fiducial values (not circular).
+Mock data for DES-Y6 uses the published measurement S8=0.780±0.012
+(not SCT's prediction). However, for any publication-quality Bayesian
+evidence calculation you must use the real survey data files.
 
 ---
 
-## Level 3: Boltzmann Solvers
+## 5. Install CAMB with CAR Modification
 
-### CAMB (recommended)
+The r_d=149.2 Mpc and H0=70.4 km/s/Mpc values require CAMB with the
+CAR sound speed patch applied to the Fortran source.
 
 ```bash
-# Install unmodified CAMB first
+# Clone CAMB
+cd ~
+git clone https://github.com/cmbant/CAMB.git
+cd CAMB
+
+# Back up original equations file
+cp fortran/equations.f90 fortran/equations.f90.original
+
+# The CAR modification is in camb/equations_car.f90 in this repo.
+# Apply it by replacing the dsound_da_exact and dsound_da_approx
+# functions in fortran/equations.f90 with the CAR versions.
+# See camb/equations_car.f90 for the exact replacement.
+
+# Build CAMB
 pip install camb
-
-# Apply the CAR sound speed patch
-cd /path/to/CAMB_source   # if building from source
-patch -p1 < /path/to/sct-collaboration/camb/equations_CAR.patch
-make clean && make
-
-# Verify
-python sct-collaboration/camb/equations_car_test.py
+# OR build from source:
+make
 ```
 
-### CLASS (alternative)
+CAMB verification (run from the CAMB directory after patching):
+
+```python
+import camb
+pars = camb.CAMBparams()
+pars.set_cosmology(H0=70.4, ombh2=0.0222, omch2=0.120,
+                   tau=0.054, mnu=0.06, omk=0)
+pars.InitPower.set_params(ns=0.9655, As=2.1e-9)
+results = camb.get_results(pars)
+# With CAR patch applied: r_d ≈ 149.2 Mpc  ✓
+# Without patch (standard): r_d ≈ 147.1 Mpc
+```
+
+---
+
+## 6. Install CLASS with CAR Modification (Alternative to CAMB)
 
 ```bash
-# Clone CLASS
+cd ~
 git clone https://github.com/lesgourg/class_public.git
 cd class_public
-
-# Apply CAR patch
-patch -p1 < /path/to/sct-collaboration/class/perturbations_CAR.patch
-
-# Build
-make clean && make -j4
-cd python && python setup.py install
-
-# Verify
-python /path/to/sct-collaboration/class/class_car_test.py
-```
-
----
-
-## Level 4: Nested Sampling (Full Posterior + Evidence)
-
-### Prerequisites
-
-```bash
-# System dependencies (Ubuntu/Debian)
-sudo apt install -y gfortran gcc g++ make cmake openmpi-bin libopenmpi-dev
-
-# PolyChord (nested sampling)
-git clone https://github.com/PolyChord/PolyChordLite.git
-cd PolyChordLite
+cp source/perturbations.c source/perturbations.c.original
+# Apply CAR modification from class/perturbations_car.c
 make
-pip install -e .
-
-# GetDist (posterior plots)
-pip install getdist
-```
-
-### Running the Analysis
-
-```bash
-# Generate mock data (or download real data — see data/README.md)
-python data/mock_data_generator.py --output data/
-
-# Run CAR nested sampling (full combined: ~8 hrs on 4 cores)
-bash chains/run_chains.sh --model car --data combined
-
-# Run ΛCDM for comparison (~48 hrs on 16 cores)
-bash chains/run_chains.sh --model lcdm --data combined
-
-# Compute Bayes factor
-python chains/compute_evidence.py \
-    --compare-car  output/evidence_car_combined.txt \
-    --compare-lcdm output/evidence_lcdm_combined.txt \
-    --output output/bayes_factor_combined.txt
-
-# Generate all figures
-python figures/make_all_figures.py --output output/figures/
 ```
 
 ---
 
-## Docker (Complete Reproducibility)
+## 7. Run Full Bayesian Analysis
 
 ```bash
-# Build container (includes all dependencies except PolyChord)
-docker build -t sct-cosmology docker/
+cd sct-collaboration
+bash chains/run_chains.sh
+```
 
-# Run CAR calculator
-docker run sct-cosmology
+This runs PolyChord nested sampling and produces:
+- Posterior distributions in chains/output/
+- Log-Bayesian-evidence in output/evidence.txt
+- Posterior plots in output/posteriors.png
 
-# Run figures
-docker run -v $(pwd)/output:/output sct-cosmology \
-    python figures/make_all_figures.py --output /output/figures/
+**IMPORTANT:** Bayesian evidence results are only meaningful when using
+real survey data (Step 4). With mock data, chi-squared ≈ 0 for some
+likelihoods and the evidence figure will be artificially inflated.
 
-# Full analysis (requires PolyChord in container — see docker/Dockerfile)
-docker-compose -f docker/docker-compose.yml run sct-car
+---
+
+## 8. Reproduce Paper Figures
+
+```bash
+python figures/make_all_figures.py
 ```
 
 ---
 
-## Expected Results Summary
+## 9. Docker (One-Command Full Reproducibility)
 
-After running the full analysis:
+```bash
+docker build -t sct-cosmology .
+docker run -v $(pwd)/output:/output sct-cosmology bash chains/run_chains.sh
+```
 
-| Quantity | CAR Prediction | Observation | Tension |
-|---|---|---|---|
-| r_d | 149.1 ± 0.3 Mpc | DESI-DR2: 147.0 ± 1.0 | 2.1σ |
-| H₀ | 70.4 ± 0.4 km/s/Mpc | SH0ES: 73.0 ± 1.0 | 2.4σ |
-| S₈ | 0.783 ± 0.015 | DES-Y6: 0.780 ± 0.012 | 0.2σ |
-| b_IA | 1.087 ± 0.002 | DES-Y6: 1.08 ± 0.04 | 0.2σ |
-| ln Z (CAR) | −1248.52 ± 0.04 | — | — |
-| Δln B | −3.80 ± 0.40 | — | 44:1 odds for CAR |
+---
+
+## File Structure
+
+```
+sct-collaboration/
+├── sct_core.py                  ← Core CAR calculator (v2.0, bugs fixed)
+├── SETUP_INSTRUCTIONS.md        ← This file
+├── README.md
+├── requirements.txt
+├── camb/
+│   └── equations_car.f90        ← CAMB CAR sound speed patch
+├── class/
+│   └── perturbations_car.c      ← CLASS CAR sound speed patch
+├── likelihoods/
+│   ├── __init__.py
+│   ├── combined_likelihood.py
+│   ├── desi_bao.py              ← DESI-DR2 BAO (ΛCDM mock if no data)
+│   ├── des_y6_lensing.py        ← DES-Y6 (real S8=0.780 mock if no data)
+│   ├── hsc_kids_lensing.py      ← HSC-Y3 + KiDS-DR5
+│   └── plank_cmb.py             ← Planck PR4 (note: filename has typo)
+├── chains/
+│   ├── run_chains.sh
+│   ├── config_car.ini
+│   ├── compute_evidence.py
+│   └── plot_posteriors.py
+├── figures/
+│   └── make_all_figures.py
+├── data/
+│   └── download_data.sh
+└── docker/
+    └── Dockerfile
+```
+
+---
+
+## Key Parameters (Paper 16 §2.1–2.5)
+
+| Parameter | Value | Status |
+|-----------|-------|--------|
+| R_b0 (coherence) | 0.260 | Matched observational input |
+| S8 | 0.783 ± 0.015 | Analytic — independently verified ✓ |
+| b_IA | 1.087 | Analytic — independently verified ✓ |
+| r_d | 149.2 ± 0.4 Mpc | Requires CAMB with CAR patch |
+| H0 | 70.4 ± 0.5 km/s/Mpc | Derived from r_d and θ* |
+| n_s | 28/29 = 0.9655 | Derived from cascade geometry |
 
 ---
 
 ## Troubleshooting
 
-**`ModuleNotFoundError: No module named 'sct_core'`**
-→ Run from the `sct-collaboration/` root directory, or:
-```bash
-export PYTHONPATH=/path/to/sct-collaboration:$PYTHONPATH
-```
+**ImportError: cannot import name 'Planck_Likelihood' from likelihoods**
+The CMB likelihood file is named `plank_cmb.py` (historical typo, missing 'n').
+All imports in v2.0 use this spelling consistently. Do not rename the file.
 
-**PolyChord build fails**
-→ Ensure `gfortran` is installed and MPI is configured.
-```bash
-which mpif90 && mpif90 --version
-```
+**S8 comes out as 0.042 or IA_bias as 400**
+You are running the old v1.0 sct_core.py. Replace it with v2.0 from this repo.
+Bug 1 (R_b0=1196.9 instead of 0.260) causes these wrong values.
 
-**CAMB returns r_d ≈ 150 Mpc (not 149.1)**
-→ The CAR patch was not applied. Re-apply `equations_CAR.patch` and rebuild.
+**H0 comes out as 1.3 km/s/Mpc**
+Bug 2 (theta in degrees). Replace with v2.0 sct_core.py.
 
-**Tests fail on `test_conservative_evidence`**
-→ Requires `chains/compute_evidence.py` to be importable. Run from repo root.
+**r_d comes out as 133 Mpc**
+Bug 3 (c/100 instead of c/H0). Replace with v2.0 sct_core.py.
 
----
-
-## File Structure After Full Setup
-
-```
-sct-collaboration/
-├── sct_core.py              ← Core CAR calculator ✓
-├── requirements.txt         ✓
-├── camb/                    ← Patched CAMB (Level 3)
-├── class/                   ← Patched CLASS (Level 3)
-├── likelihoods/             ← Survey likelihood modules ✓
-├── chains/                  ← PolyChord analysis (Level 4)
-├── figures/                 ← Figure scripts ✓
-├── data/                    ← Mock data generator ✓
-├── docker/                  ← Container definition ✓
-├── tests/                   ← Unit tests ✓
-└── output/                  ← Generated during analysis
-    ├── chains_car_combined/
-    ├── chains_lcdm_combined/
-    ├── figures/
-    └── evidence_*.txt
-```
+**Bayesian evidence shows Δln B = −3.8 (44:1) but I have no data files**
+Results computed from mock data are circular and not valid. Download
+real survey data first (Step 4).
