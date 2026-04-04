@@ -2,8 +2,7 @@
 ## Codified Acoustic Relation (CAR) — Parameter-Free Cosmology
 
 **Version 2.0** | April 2026 | Three critical bugs corrected
-
----
+If you downloaded this code before April 2026, please re-clone.
 
 ### Paper Reference
 
