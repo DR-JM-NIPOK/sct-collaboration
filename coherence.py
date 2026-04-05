@@ -51,7 +51,9 @@ F_B        = 0.1675          # Cluster baryon fraction (X-COP; Papers 6, 13)
 A_STAR     = 1.0 / F_B       # = 5.9701 universal coherence at virialization
 N_EFF_VIR  = np.e * (A_STAR - 1)  # = 13.51 effective coherent sources
 C_STAR     = np.e**(-1)      # = 0.3679 coherence amplitude at R_vir
-R_B0       = 0.260           # CAR coherence parameter (Paper 16)
+# R_B0 is now the derived constant from Paper 17 v4.0 Section 11.6
+# DO NOT use 0.260 — that was the legacy matched value
+R_B0       = 0.257           # CAR coherence parameter (DERIVED, Paper 17 v4.0 Section 11.6)
 
 # Void/virial fractions at z=0 (Papers 7, 11)
 F_VIR_0    = 0.17            # Virialized fraction today

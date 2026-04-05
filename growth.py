@@ -27,7 +27,11 @@ OPEN ISSUE (θ* trilemma):
 
 import numpy as np
 from scipy.integrate import quad, odeint
-from coherence import A_eff, f_virial, f_void, R_B0
+from coherence import A_eff, f_virial, f_void
+from sct_core import R_B_DERIVED, R_B_UNCERTAINTY
+# R_B0 is now the derived constant from Paper 17 v4.0 Section 11.6
+# DO NOT use 0.260 — use R_B_DERIVED = 0.257
+R_B0 = R_B_DERIVED  # 0.257 derived, not 0.260 matched
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 C_KMS      = 299792.458
@@ -286,7 +290,7 @@ def cs2_CAR_background(z: float) -> float:
 
     Two-regime distinction (Paper 16, proposed addition for v1.8):
         Background (sets r_d):    cs² = (1 + R_b × f_virial(z)) / 3
-        Perturbation (sets S8):   cs² = (1 + R_b0) / 3 = 0.420
+        Perturbation (sets S8):   cs² = (1 + R_b0) / 3 = 0.419  (derived, R_b=0.257)
 
     This resolves the θ* trilemma: r_d stays near 147-149 Mpc
     while S8 suppression is preserved from perturbation-sector CAR.
@@ -299,9 +303,9 @@ def cs2_CAR_perturbation(z: float) -> float:
     """
     CAR sound speed for PERTURBATION (S8 suppression) calculation.
 
-    Full R_b0 = 0.260 applies in the perturbation sector because
+    Full R_b0 = 0.257 (derived, Paper 17 v4.0 Section 11.6) applies in
     the coherence enhancement acts on structure formation.
-    cs² = (1 + R_b0) / 3 = 0.420
+    cs² = (1 + R_b0) / 3 = 0.419  (derived, Paper 17 v4.0 Section 11.6)
     """
     R_b_z = R_B0 / (1.0 + z)   # evolves with redshift per Paper 16
     return (1.0 + R_b_z) / 3.0
