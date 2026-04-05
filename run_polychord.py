@@ -7,7 +7,7 @@ Implements the full joint likelihood combining all four datasets:
     DESI-DR2 BAO + Planck PR4 CMB + DES-Y6 3×2pt + HSC-Y3 + KiDS-DR5
 
 Parameter space:
-    CAR  : Ω_m ∈ [0.1, 0.5],  R_b ∈ [0.24, 0.28]  (2 free parameters)
+    CAR  : Ω_m ∈ [0.1, 0.5]  (1 free parameter — R_b=0.257 derived, Paper 17 v4.0)
     ΛCDM : Ω_b h², Ω_c h², 100θ_s, τ, ln(10¹⁰A_s), n_s  (6 cosmological)
            + up to 42 nuisance parameters (IA, photo-z, baryonic feedback)
 
@@ -63,12 +63,13 @@ def build_combined_likelihood(data: str, verbose: bool = False):
         theta = [Omega_m, R_b]
         """
         Omega_m, R_b = theta
-        # Reconstruct Omega_b_h2 from R_b
-        Omega_b_h2 = R_b * 3.0 * PLANCK_OMEGA_GAM_H2 / 4.0
+        # R_b is a derived constant — NOT reconstructed from Omega_b_h2
+        # Paper 17 v4.0 Section 11.6 closes this circularity
+        from sct_core import R_B_DERIVED
         try:
             params = CAR_predictions(
-                Omega_b_h2 = Omega_b_h2,
-                Omega_m    = Omega_m,
+                Omega_m = Omega_m,
+                R_b     = R_B_DERIVED,
             )
             params['Omega_m'] = Omega_m
             params['R_b']     = R_b
@@ -85,12 +86,15 @@ def prior_transform_car(cube):
     """
     Map unit hypercube to CAR prior.
     theta[0] = Omega_m  ~ Uniform[0.1, 0.5]
-    theta[1] = R_b      ~ Gaussian(0.260, 0.002)  [BBN-anchored]
+    theta[0] = Omega_m  ~ Uniform[0.1, 0.5]
+    R_b is now a DERIVED constant = 0.257 +/- 0.032 (Paper 17 v4.0 Section 11.6)
+    R_b is NOT sampled — this closes the circularity in the Bayes factor.
     """
     from scipy.stats import norm
     theta = np.zeros(2)
     theta[0] = 0.1 + cube[0] * 0.4          # Omega_m: uniform [0.1, 0.5]
-    theta[1] = norm.ppf(cube[1], 0.260, 0.002)  # R_b: Gaussian BBN prior
+    # R_b is now a DERIVED constant — not sampled (Paper 17 v4.0 Section 11.6)
+    # theta has only 1 dim (Omega_m); R_b = R_B_DERIVED = 0.257
     return theta
 
 
@@ -114,8 +118,9 @@ def run_polychord_car(model: str, data: str, output_dir: str,
         def log_like(theta):
             lnL = log_like_fn(theta)
             Omega_m, R_b = theta
-            Omega_b_h2 = R_b * 3.0 * PLANCK_OMEGA_GAM_H2 / 4.0
-            params = CAR_predictions(Omega_b_h2=Omega_b_h2, Omega_m=Omega_m)
+            # R_b is derived — not reconstructed from Omega_b_h2
+            from sct_core import R_B_DERIVED
+            params = CAR_predictions(Omega_m=Omega_m, R_b=R_B_DERIVED)
             phi = [params['r_d_Mpc'], params['H0'], params['S8'], params['IA_bias']]
             return lnL, phi
 

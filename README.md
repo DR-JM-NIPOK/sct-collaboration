@@ -63,7 +63,7 @@ After a full combined run, the key numbers to verify:
 | Δln B (DESI+Planck) | −1.20 ± 0.28 (5:1 odds) |
 | Δln B (conservative combined) | −3.80 ± 0.40 (44:1 odds) |
 | CAR Ω_m posterior | 0.312 ± 0.009 |
-| CAR R_b posterior | 0.260 ± 0.002 |
+| CAR R_b (derived) | 0.257 ± 0.032 |  (Paper 17 v4.0 Section 11.6 — not sampled)
 
 ## Model Comparison Notes
 
