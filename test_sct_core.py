@@ -38,11 +38,14 @@ def preds():
 
 class TestRb0Constants:
     def test_R_b0_paper_value(self):
-        """Paper states R_b0 = 0.260 — verify constant is set correctly."""
-        assert abs(R_B0_PAPER - 0.260) < 1e-6
+        """Paper 17 v4.0 derives R_b0 = 0.257 — verify derived constant is set correctly.
+        DOI: 10.13140/RG.2.2.14355.03366 Section 11.6
+        """
+        assert abs(R_B0_PAPER - 0.257) < 1e-6
 
     def test_R_b0_bbn_z0_is_large(self):
-        """Correct BBN R_b0 at z=0 is ~1197, NOT 0.260."""
+        """Correct BBN R_b0 at z=0 is ~1197, NOT 0.257 (derived constant).
+        Derived value comes from SO(3) cascade + QCD junction conditions."""
         assert R_B0_BBN_Z0 > 100.0
         expected = 3.0 * BBN_OMEGA_B_H2 / (4.0 * PLANCK_OMEGA_GAM_H2)
         assert abs(R_B0_BBN_Z0 - expected) < 1.0
@@ -66,7 +69,8 @@ class TestRbEvolution:
         assert R_b_of_z(R_b0, 0) > R_b_of_z(R_b0, 100) > R_b_of_z(R_b0, 1089)
 
     def test_R_b_z_star_with_paper_value(self):
-        """At z*=1089, R_b(z*) = 0.260/1090 ≈ 2.39e-4 (tiny)."""
+        """At z*=1089, R_b(z*) = 0.257/1090 ≈ 2.36e-4 (tiny).
+        Uses derived R_b=0.257, Paper 17 v4.0 Section 11.6."""
         R_bz = R_b_of_z(R_B0_PAPER, PLANCK_Z_STAR)
         assert abs(R_bz - R_B0_PAPER / (1 + PLANCK_Z_STAR)) < 1e-10
         assert R_bz < 1e-3   # very small at z*
@@ -95,10 +99,11 @@ class TestSoundSpeed:
             assert cs2_CAR(R_B0_PAPER, z) > cs2_LCDM(R_B0_PAPER, z)
 
     def test_cs2_CAR_z0_value(self):
-        """c_s²(z=0) = (1+0.260)/3 = 0.420 exactly."""
+        """c_s²(z=0) = (1+0.257)/3 = 0.419 exactly.
+        R_b=0.257 is the derived constant (Paper 17 v4.0 Section 11.6)."""
         val = cs2_CAR(R_B0_PAPER, 0.0)
         assert abs(val - (1.0 + R_B0_PAPER) / 3.0) < 1e-10
-        assert abs(val - 0.420) < 0.001
+        assert abs(val - 0.419) < 0.001  # 0.419 with derived R_b=0.257
 
     def test_cs2_high_z_limit(self):
         """Both CAR and ΛCDM → 1/3 as z → ∞ (R_b → 0)."""
@@ -122,7 +127,7 @@ class TestS8:
         assert abs(result['numerical'] - 0.783) < 0.002
 
     def test_S8_suppression_factor(self):
-        """(1 + R_b0/3)^{-½} ≈ 0.959 with paper R_b0=0.260."""
+        """(1 + R_b0/3)^{-½} with derived R_b0=0.257 (Paper 17 v4.0 Section 11.6)."""
         result = compute_S8(R_B0_PAPER)
         expected = (1 + R_B0_PAPER/3)**(-0.5)
         assert abs(result['suppression'] - expected) < 1e-8
@@ -138,7 +143,7 @@ class TestS8:
         assert preds['S8'] < PLANCK_S8
 
     def test_S8_universal_damping_ratio(self):
-        """Damping ratio (1+R_b/3)^{-½} ≈ 0.959 (paper uses R_b0=0.260)."""
+        """Damping ratio (1+R_b/3)^{-½} with derived R_b0=0.257 (Paper 17 v4.0)."""
         ratio = (1.0 + R_B0_PAPER/3.0)**(-0.5)
         assert abs(ratio - 0.959) < 0.002
 
@@ -190,7 +195,8 @@ class TestPaperDiscrepancies:
         assert preds['H0'] > 0
 
     def test_R_b0_bbz_value_is_not_026(self):
-        """BBN formula gives R_b0 ≈ 1197, not 0.260 as paper states."""
+        """BBN formula gives R_b0 ≈ 1197, not 0.257 (derived constant).
+        R_b0=0.257 is derived from SO(3) cascade + QCD junction, not from Omega_b_h2."""
         R_b0_computed = 4 * BBN_OMEGA_B_H2 / (3 * PLANCK_OMEGA_GAM_H2)
         assert abs(R_b0_computed - R_B0_PAPER) > 100   # large discrepancy
 
