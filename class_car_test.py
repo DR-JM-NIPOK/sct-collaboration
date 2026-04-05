@@ -4,7 +4,7 @@ class/class_car_test.py
 Verification test for the CAR modification to CLASS.
 
 Compares CLASS output with and without the CAR patch to confirm:
-    1. c_s² at z_dec shifts from 0.279 (ΛCDM) to 0.411 (CAR)
+    1. c_s² at z_dec shifts from 0.279 (ΛCDM) to 0.411 (CAR, derived R_b=0.257 Paper 17 v4.0)
     2. r_s shifts from ~150.0 Mpc to ~149.1 Mpc
     3. All other outputs (CMB spectra shape) remain physically reasonable
 
@@ -21,8 +21,8 @@ from sct_core import CAR_predictions, BBN_OMEGA_B_H2, PLANCK_OMEGA_GAM_H2, PLANC
 # Expected values from paper
 EXPECTED_RS_CAR   = 149.1   # Mpc  ± 0.5
 EXPECTED_RS_LCDM  = 150.0   # Mpc  ± 0.1
-EXPECTED_CS2_CAR  = (1.0 + 0.260 / (1.0 + 1089.0)) / 3.0   # ≈ 0.4107 at z_dec
-EXPECTED_CS2_LCDM = 1.0 / (3.0 * (1.0 + 0.260 / (1.0 + 1089.0)))  # ≈ 0.2793
+EXPECTED_CS2_CAR  = (1.0 + 0.257 / (1.0 + 1089.0)) / 3.0   # ≈ 0.4106 at z_dec (derived R_b=0.257, Paper 17 v4.0)
+EXPECTED_CS2_LCDM = 1.0 / (3.0 * (1.0 + 0.257 / (1.0 + 1089.0)))  # ≈ 0.2793 (unchanged by R_b update)
 
 TOL_RS   = 1.0    # Mpc  (generous; CLASS integration may differ slightly)
 TOL_CS2  = 0.001
