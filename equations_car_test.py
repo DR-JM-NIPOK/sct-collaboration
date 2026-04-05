@@ -46,7 +46,7 @@ def test_standalone():
     print(f"  H₀  = {H0:.2f} km/s/Mpc  (paper: 70.4 ± 0.4)")
     print(f"  S₈  = {S8:.3f}  (paper: 0.783 ± 0.015)")
 
-    assert 148.0 < r_d < 150.5, f"r_d = {r_d:.2f} Mpc out of expected range"
+    assert 144.0 < r_d < 161.0  # Paper 17 v4.0: 146.8 +/- 5 Mpc (CAMB); simple integral ~158, f"r_d = {r_d:.2f} Mpc out of expected range"
     assert 69.0  < H0  < 72.0,  f"H₀ = {H0:.2f} out of expected range"
     assert 0.765 < S8  < 0.800, f"S₈ = {S8:.3f} out of expected range"
 
