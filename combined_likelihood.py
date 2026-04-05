@@ -54,19 +54,24 @@ class CombinedLikelihood:
                 UserWarning, stacklevel=2
             )
 
-    def log_likelihood(self, Omega_m=0.315, R_b=0.260):
+    def log_likelihood(self, Omega_m=0.315, R_b=None):
         """
         Combined log-likelihood for CAR framework.
 
         Parameters
         ----------
         Omega_m : float   Total matter density
-        R_b     : float   CAR coherence parameter (should always be 0.260)
+        R_b     : float   CAR coherence parameter. Defaults to R_B_DERIVED=0.257
+                          (Paper 17 v4.0 Section 11.6 — derived, not matched).
+                          DO NOT pass 0.260 — that was the legacy matched value.
 
         Returns
         -------
         logL : float   Total log-likelihood
         """
+        from sct_core import R_B_DERIVED
+        if R_b is None:
+            R_b = R_B_DERIVED  # 0.257 derived (Paper 17 v4.0 Section 11.6)
         preds = CAR_predictions(Omega_m=Omega_m)
 
         # Extract parameters — use CAMB-verified values
@@ -83,7 +88,7 @@ class CombinedLikelihood:
 
         return logL_desi + logL_des_y6 + logL_hsc_kids + logL_planck
 
-    def compute_chi2(self, Omega_m=0.315, R_b=0.260):
+    def compute_chi2(self, Omega_m=0.315, R_b=None):
         return -2.0 * self.log_likelihood(Omega_m, R_b)
 
 
