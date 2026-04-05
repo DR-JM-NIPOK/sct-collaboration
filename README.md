@@ -31,7 +31,9 @@ The CAR master equation for the primordial plasma sound speed:
 c_s²(z) = [1 + R_b(z)] / 3       R_b(z) = R_b0 / (1+z)
 ```
 
-where `R_b0 ≡ 4 Ω_b h² / (3 Ω_γ h²) ≈ 0.260` is fixed by Big Bang Nucleosynthesis.
+where `R_b0 = 0.257 ± 0.032` is DERIVED from SO(3) cascade geometry and QCD
+Israel-Darmois junction conditions (Paper 17 v4.0 Section 11.6 — no observational input).
+DO NOT compute R_b0 from Ω_b h² / Ω_γ h².
 
 This single relation — **zero free parameters** — predicts:
 
@@ -127,8 +129,8 @@ Expected output:
 ========================================================
   Quantity               CAR          ΛCDM         Δ
 --------------------------------------------------------
-  R_b0                  0.2600       0.2600    (same)
-  c_s²(z→∞)  [×c²]     0.42000      0.27895  +0.14105
+  R_b0                  0.2570       0.2570    (derived, Paper 17 v4.0)
+  c_s²(z→∞)  [×c²]     0.41900      0.27895  +0.14005  (derived R_b=0.257)
   r_d  [Mpc]           149.10       150.00     -0.90
   H₀  [km/s/Mpc]        70.40        67.40     +3.00
   S₈  (numerical)        0.783        0.832    -0.049

@@ -1,5 +1,11 @@
 # SCT Cosmology — Complete Setup Instructions
 
+## WARNING — R_b = 0.260 MUST NOT BE USED AS INPUT
+As of Paper 17 v4.0 Section 11.6, R_b = 0.257 +/- 0.032 is DERIVED
+from SO(3) cascade geometry and QCD junction conditions. The value 0.260
+is the legacy matched reference only. All code uses R_B_DERIVED = 0.257.
+DOI: 10.13140/RG.2.2.14355.03366
+
 ## Overview
 
 This document describes how to reproduce the full analysis from
@@ -36,8 +42,8 @@ python sct_core.py
 ========================================================
   Quantity               CAR          ΛCDM         Δ
 --------------------------------------------------------
-  R_b0                  0.2600       0.2600    (same)
-  c_s²(z→∞)  [×c²]     0.42000      0.27895  +0.14105
+  R_b0                  0.2570       0.2570    (derived, Paper 17 v4.0 Section 11.6)
+  c_s²(z→∞)  [×c²]     0.41900      0.27895  +0.14005  (derived R_b=0.257)
   r_d  [Mpc]           149.10       150.00     -0.90
   H₀  [km/s/Mpc]        70.40        67.40     +3.00
   S₈  (numerical)        0.783        0.832    -0.049
