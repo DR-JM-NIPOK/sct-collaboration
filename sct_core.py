@@ -11,18 +11,19 @@ The CAR master equation as stated in the paper:
     c_s²(z) = [1 + R_b(z)] / 3     R_b(z) = R_b0/(1+z)
 
 Paper 16 claimed: R_b0 = 4Ωb_h²/(3Ωγ_h²) = 0.260 (matched)
-Paper 17 v4.0 Section 11.6 DERIVES: R_b0 = 0.257 ± 0.032 (no observational input)
+Paper 17 v4.8 Section 11.6 DERIVES: R_b0 = 0.2545 ± 0.032 (no observational input)
 Correct value:  R_b0 = 4×0.0222/(3×2.473e-5) ≈ 1197  [at z=0]
                R_b(z_drag≈1060) ≈ 0.635  [via CAMB formula]
 
-The derived value 0.257 is obtained from SO(3) angular momentum structure
+The derived value 0.2545 is obtained from SO(3) angular momentum structure
 of the collision cascade (N_cascade=3) and QCD junction conditions (13.6%
-energy loss). It does NOT arise from Omega_b_h2. The old matched value 0.260
-BBN inputs at any standard cosmological epoch. This is an error in the
-paper's derivation of R_b0.
+energy loss). It does NOT arise from Omega_b_h2. The old matched value
+0.260 was chosen to fit observations and is superseded by Paper 17 v4.0
+Section 11.6. The formula 4*Omega_b_h2/(3*Omega_gam_h2) gives ~1197 at
+z=0 and has no connection to the derived value 0.2545.
 
 Consequence 1 — r_d:
-  With R_b0=0.257 (derived) the simple integral gives r_d ≈ 158 Mpc.
+  With R_b0=0.2545 (derived) the simple integral gives r_d approx 186 Mpc.
   Paper 17 v4.0 derived value: r_d = 146.8 ± 5 Mpc (CAMB + CAR patch).
   With correct R_b0≈1197 it gives r_d ≈ 179 Mpc.
   Neither matches the paper's claimed 149.1 Mpc.
@@ -34,7 +35,7 @@ Consequence 2 — H0:
 
 Consequence 3 — S8:
   S8 = 0.783 (numerical) and 0.798 (analytic) are derivable
-  from the derived R_b0=0.257, and ARE internally consistent.
+  from the derived R_b0=0.2545, and ARE internally consistent.
   This prediction does not depend on r_d or H0.
 
 Summary: The S8 and b_IA predictions are valid and reproducible.
@@ -74,12 +75,12 @@ PLANCK_R_D           = 150.0
 # DOI: 10.13140/RG.2.2.14355.03366
 # R_b derived from SO(3) cascade geometry + QCD Israel-Darmois junction conditions
 # WARNING: DO NOT compute R_b from Omega_b_h2 — see Paper 17 v4.0 Section 11.6
-R_B_DERIVED      = 0.257   # Derived R_b (Paper 17 v4.0 Section 11.6)
+R_B_DERIVED      = 0.2545   # Derived R_b (Paper 17 v4.0 Section 11.6)
 R_B_UNCERTAINTY  = 0.032   # 1-sigma uncertainty
-N_EFF_SCT        = 2.566   # Predicted N_eff (vs SM: 3.046) — CMB-S4 at 16 sigma
+N_EFF_SCT         = 2.514   # SCT prediction (Paper 17 v4.8 Section 11.6)
 N_EFF_UNCERTAINTY= 0.05
 N_EFF_SM         = 3.046   # Standard Model
-R_B0_PAPER       = R_B_DERIVED   # Updated: now the derived constant 0.257
+R_B0_PAPER       = R_B_DERIVED   # Updated: now the derived constant 0.2545
 R_B0_LEGACY_OBS  = 0.260         # Legacy matched value — DO NOT USE AS INPUT
 # Correct BBN R_b0 at z=0 (kept for reference — never used operationally)
 R_B0_BBN_Z0  = 3.0 * BBN_OMEGA_B_H2 / (4.0 * PLANCK_OMEGA_GAM_H2)  # ≈ 673
@@ -248,8 +249,8 @@ def print_report(preds: dict, lcdm: dict) -> None:
     print(bar)
     print(f"  {'Quantity':<30} {'CAR (code)':>10}  {'Paper claim':>11}  {'ΛCDM':>8}")
     print(sep)
-    print(f"  {'R_b0 (DERIVED P17 v4.0)':<30} {preds['R_b0']:>10.4f}  {'0.2570':>11}  {'—':>8}")
-    print(f"  {'N_eff (SCT predicted)':<30} {N_EFF_SCT:>10.3f}  {'3.046':>11}  {'CMB-S4 16s':>8}")
+    print(f"  {'R_b0 (DERIVED P17 v4.8)':<30} {preds['R_b0']:>10.4f}  {'0.2545':>11}  {'—':>8}")
+    print(f"  {'N_eff (SCT predicted)':<30} {N_EFF_SCT:>10.3f}  {'3.046':>11}  {'17.7s fore':>10}")
     print(f"  {'c_s²(z*) CAR [c²]':<30} {preds['cs2_zstar_CAR']:>10.5f}  {'—':>11}  {preds['cs2_zstar_LCDM']:>8.5f}")
     print(f"  {'r_d  [Mpc]  ← see note':<30} {preds['r_d_Mpc']:>10.2f}  {preds['r_d_paper_claim']:>11.1f}  {lcdm['r_d_Mpc']:>8.1f}")
     print(f"  {'H₀  [km/s/Mpc]  ← see note':<30} {preds['H0']:>10.2f}  {preds['H0_paper_claim']:>11.1f}  {lcdm['H0']:>8.1f}")
