@@ -19,13 +19,17 @@
 ! ============================================================================
 
 subroutine CAR_sound_speed(grho_b, grho_g, cs2, R)
+  ! NOTE: CAMB uses double precision real(dl) throughout.
+  ! Replace 'real' with 'real(dl)' and add 'use Precision' when
+  ! integrating into equations.f90. This stub uses real(dl) for correctness.
+  use Precision
   implicit none
-  real, intent(in) :: grho_b, grho_g
-  real, intent(out) :: cs2, R
-  ! Baryon-to-photon ratio (same as ΛCDM)
-  R = (3.0 * grho_b) / (4.0 * grho_g)
-  ! CAR sound speed (modified)
-  cs2 = (1.0 + R) / 3.0
+  real(dl), intent(in) :: grho_b, grho_g
+  real(dl), intent(out) :: cs2, R
+  ! Baryon-to-photon ratio (same as ΛCDM — computed from density fields, not hardcoded)
+  R = (3._dl * grho_b) / (4._dl * grho_g)
+  ! CAR sound speed: cs2 = (1+R)/3 replaces standard 1/(3*(1+R))
+  cs2 = (1._dl + R) / 3._dl
 end subroutine CAR_sound_speed
 
 ! ============================================================================
