@@ -4,11 +4,11 @@
 
 ## ⚠ WARNING — R_b = 0.260 MUST NOT BE USED AS INPUT
 
-As of v3.0 (Paper 17 v4.0 §11.6), R_b = **0.257 ± 0.032 is a DERIVED
+As of v3.0 (Paper 17 v4.0 §11.6), R_b = **0.2545 ± 0.032 is a DERIVED
 constant** from SO(3) collision cascade geometry and QCD junction conditions.
 The value **0.260 must not be passed to sct_core.py** as an input parameter.
 0.260 is the legacy observational reference — passing it creates the circularity
-that Paper 17 v4.0 eliminates. All code uses R_B_DERIVED = 0.257 internally.
+that Paper 17 v4.8 eliminates. All code uses R_B_DERIVED      = 0.2545 internally.
 
 ---
 
@@ -48,10 +48,10 @@ Expected output (v2.0, bugs corrected):
 ====================================================================
   Quantity                                   CAR      ΛCDM  Source
 --------------------------------------------------------------------
-  R_b0 (coherence parameter)              0.2570 (derived)         —  analytic
+  R_b0 (coherence parameter)              0.2545 (derived)         —  analytic
   S₈ (analytic) ✓                         0.7981    0.8320  analytic
   S₈ (numeric, −0.015) ✓                  0.7831    0.8320  analytic
-  b_IA = Ĉ_bg ✓                           1.0867    1.0000  analytic
+  b_IA = Ĉ_bg ✓                           1.0848    1.0000  analytic
 --------------------------------------------------------------------
   r_d (simple integral, approx)            158.x     147.1  approx
   r_d (CAMB + equations_car.f90) ✓         149.2     147.1  CAMB req.
@@ -62,7 +62,7 @@ Expected output (v2.0, bugs corrected):
   CAMB req. — run camb/equations_car.f90 for these values
 ====================================================================
   BUGS FIXED IN v2.0:
-  [1] R_b0 = 0.257 derived (Paper 17 v4.0 §11.6) — DO NOT compute from Omega_b_h2
+  [1] R_b0 = 0.2545 derived (Paper 17 v4.8 §11.6) — DO NOT compute from Omega_b_h2
   [2] theta_star = 1.04105/100 rad  (not × π/180)
   [3] r_d = integral × c/H0  (not × c/100)
 ====================================================================
@@ -215,7 +215,7 @@ sct-collaboration/
 
 | Parameter | Value | Status |
 |-----------|-------|--------|
-| R_b0 (coherence) | 0.257 ± 0.032 | Derived constant — Paper 17 v4.0 §11.6 |
+| R_b0 (coherence) | 0.2545 ± 0.032 | Derived constant — Paper 17 v4.8 §11.6 |
 | S8 | 0.783 ± 0.015 | Analytic — independently verified ✓ |
 | b_IA | 1.087 | Analytic — independently verified ✓ |
 | r_d | 149.2 ± 0.4 Mpc | Requires CAMB with CAR patch |
@@ -232,7 +232,7 @@ All imports in v2.0 use this spelling consistently. Do not rename the file.
 
 **S8 comes out as 0.042 or IA_bias as 400**
 You are running the old v1.0 sct_core.py. Replace it with v2.0 from this repo.
-Bug 1 (R_b0=1196.9 instead of 0.257 (derived constant, Paper 17 v4.0 §11.6)) causes these wrong values.
+Bug 1 (R_b0=1196.9 instead of 0.2545 (derived constant, Paper 17 v4.8 §11.6)) causes these wrong values.
 
 **H0 comes out as 1.3 km/s/Mpc**
 Bug 2 (theta in degrees). Replace with v2.0 sct_core.py.

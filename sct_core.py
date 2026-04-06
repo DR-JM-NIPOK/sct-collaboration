@@ -22,7 +22,7 @@ In v1.0 and v2.0, R_b = 0.260 was a MATCHED observational parameter:
   because R_b was tuned to the data that the Bayesian evidence test used.
 
 In v3.0, R_b is a DERIVED CONSTANT of the SCT framework:
-  Paper 17 v4.0 Section 11.6 derives R_b = 0.257 +/- 0.032 from first
+  Paper 17 v4.0 Section 11.6 derives R_b = 0.2545 +/- 0.032 from first
   principles using exactly two geometric inputs:
 
   (1) SO(3) angular momentum structure of the collision cascade
@@ -34,38 +34,40 @@ In v3.0, R_b is a DERIVED CONSTANT of the SCT framework:
 
   NO observational input is required. The derivation is purely geometric
   and field-theoretic. The agreement with observed R_b = 0.260 is at
-  0.11 sigma — a post-diction that closes the circularity.
+  0.17 sigma — a post-diction that closes the circularity.
 
 CONSEQUENCES OF THE EPISTEMIC UPGRADE
 ───────────────────────────────────────────────────────────────────────────
-  R_b:      0.260 (matched) -> 0.257 +/- 0.032 (derived)
-  c_s^2/c^2: 0.420 (matched) -> 0.419 +/- 0.011 (derived)
-  N_eff:    new prediction N_eff_SCT = 2.57 +/- 0.05
+  R_b:      0.260 (observed) -> 0.2545 +/- 0.032 (derived, Paper 17 v4.8)
+  c_s^2/c^2: 0.420 (LCDM ref) -> 0.4182 +/- 0.011 (derived, Paper 17 v4.8)
+  N_eff:    new prediction N_eff_SCT = 2.514 +/- 0.05
             Standard Model predicts N_eff_SM = 3.046
             These are on opposite sides of 3.000 — the CMB-S4 test
-            is decisive at 16 sigma separation.
+            is decisive at 17.7 sigma (forecast) separation.
 
 WARNING: DO NOT pass R_b = 0.260 as a hardcoded input to this module.
    The value 0.260 is now a legacy observational reference for comparison
-   only. All physics computations use R_B_DERIVED = 0.257.
+   only. All physics computations use R_B_DERIVED      = 0.2545.
 
 WHAT THIS CODE COMPUTES
 ───────────────────────────────────────────────────────────────────────────
 Analytic outputs (independently verified, no CAMB required):
   S8    = 0.783   from 0.832 x (1 + R_b/3)^(-1/2) - 0.015        v
-  b_IA  = 1.086   from 1 + R_b/3                                    v
-  c_s^2 = 0.419   from (1 + R_b)/3 with R_b = 0.257 (derived)      v
+  b_IA  = 1.0848  from 1 + R_b/3                                    v
+  c_s^2 = 0.4182   from (1 + R_b)/3 with R_b = 0.2545 (derived)     v
 
 Outputs that require the CAMB Boltzmann solver (equations_car.f90):
   r_d   = 146.8 +/- 5 Mpc
   H0    = 70.4 km/s/Mpc
 
 New CMB-S4 prediction (Paper 17 v4.0):
-  N_eff_SCT = 2.57 +/- 0.05  (vs SM: 3.046) — testable at 16 sigma
+  N_eff_SCT = 2.514 +/- 0.05  (vs SM: 3.046) — testable at 17.7 sigma (forecast)
 
 NOTE ON r_d
 ───────────────────────────────────────────────────────────────────────────
-The simple integral gives r_d approx 158 Mpc with R_b=0.257.
+The simple integral gives r_d approx 186 Mpc with R_b=0.2545
+(the self-consistent H0 iteration is not stable for this integration;
+the physically meaningful value is the CAMB result of 146.8 ± 5 Mpc).
 The Paper 17 v4.0 derived value is r_d = 146.8 +/- 5 Mpc from CAMB
 with the CAR cs^2 patch applied (equations_car.f90).
 
@@ -73,12 +75,12 @@ BUGS FIXED IN v2.0
 ───────────────────────────────────────────────────────────────────────────
 Bug 1 — R_b0 convention (CRITICAL — affects S8 and b_IA):
   BROKEN: R_b0 = 4xOmega_b_h2/(3xOmega_gam_h2) = 1196.9
-  FIXED:  R_b0 = 0.257   (derived constant, Paper 17 v4.0 Section 11.6)
+  FIXED:  R_b0 = 0.2545  (derived constant, Paper 17 v4.8 Section 11.6)
   Why:    Must NOT be computed from Omega_b_h2. Paper 17 v4.0 Section
           11.6 derives R_b from SO(3) cascade geometry and QCD junction
           conditions. No observational input is required or permitted.
   Effect: With 1196.9 -> S8=0.042, b_IA=400 (wildly wrong)
-          With 0.257  -> S8=0.783, b_IA=1.086 (correct, derived)
+          With 0.2545 -> S8=0.783, b_IA=1.0848 (correct, derived)
 
 Bug 2 — theta_star unit conversion (CRITICAL — affects H0):
   BROKEN: theta_star_rad = theta_star x pi/180
@@ -105,23 +107,23 @@ C_KM_S = 299792.458          # Speed of light [km/s]
 #
 # WARNING: R_b = 0.260 must NOT be used as input to this module.
 #    The observed value 0.260 is a post-diction reference only.
-#    All computations use R_B_DERIVED = 0.257 +/- 0.032.
+#    All computations use R_B_DERIVED      = 0.2545 +/- 0.032.
 # ══════════════════════════════════════════════════════════════════════════════
 
 # R_b derived from SO(3) angular momentum structure of the collision cascade
 # (N_cascade = 3) and QCD phase transition boundary correction from Paper 14
 # Israel-Darmois junction conditions (13.6% energy loss).
-# Agreement with observed R_b = 0.260 is at 0.11 sigma.
-R_B_DERIVED      = 0.257   # Derived baryon-photon coherence ratio (Paper 17 v4.0 Section 11.6)
+# Agreement with observed R_b = 0.260 is at 0.17 sigma.
+R_B_DERIVED      = 0.2545   # Derived baryon-photon coherence ratio (Paper 17 v4.0 Section 11.6)
 R_B_UNCERTAINTY  = 0.032   # 1-sigma uncertainty (geometric + QCD boundary)
 
 # Effective sound speed squared: c_s^2/c^2 = (1 + R_b) / 3
-# With R_b = 0.257: c_s^2 = 1.257/3 = 0.419 (updated from 0.420 in v2.0)
-CS2_DERIVED      = (1.0 + R_B_DERIVED) / 3.0   # = 0.41900
+# With R_b = 0.2545: c_s^2 = 1.2545/3 = 0.4182 (Paper 17 v4.8)
+CS2_DERIVED      = (1.0 + R_B_DERIVED) / 3.0   # = 0.41817 approx
 CS2_UNCERTAINTY  = R_B_UNCERTAINTY / 3.0        # = 0.011
 
 # Background coherence enhancement C_hat_bg = 1 + R_b/3
-C_HAT_BG_DERIVED     = 1.0 + R_B_DERIVED / 3.0   # = 1.08567
+C_HAT_BG_DERIVED     = 1.0 + R_B_DERIVED / 3.0   # = 1.0848 approx
 C_HAT_BG_UNCERTAINTY = R_B_UNCERTAINTY / 3.0      # = 0.011
 
 # Sound horizon (from CAMB with CAR patch, Paper 17 v4.0)
@@ -129,11 +131,11 @@ R_D_DERIVED      = 146.8   # Mpc — derived from full Boltzmann solver
 R_D_UNCERTAINTY  = 5.0     # Mpc — 1-sigma (includes QCD boundary uncertainty)
 
 # Effective neutrino species — new prediction, Paper 17 v4.0 Section 11.6
-# N_eff_SCT = 2.57 +/- 0.05 (predicted)
+# N_eff_SCT = 2.514 +/- 0.05 (predicted)
 # N_eff_SM  = 3.046          (Standard Model)
-# These are on opposite sides of 3.000. CMB-S4 tests this at 16 sigma.
+# These are on opposite sides of 3.000. CMB-S4 tests this at 17.7 sigma (forecast).
 # WARNING: N_eff > 3.0 from CMB-S4 would exclude SCT (falsifiable).
-N_EFF_SCT         = 2.566   # SCT prediction (Paper 17 v4.0 Section 11.6)
+N_EFF_SCT         = 2.514   # SCT prediction (Paper 17 v4.0 Section 11.6)
 N_EFF_UNCERTAINTY = 0.05    # 1-sigma uncertainty
 N_EFF_SM          = 3.046   # Standard Model value (Mangano et al. 2005)
 
@@ -162,7 +164,7 @@ def R_b_of_z(z: float) -> float:
     Paper 16 Section 2.3 / Paper 17 v4.0 Section 11.6:
         R_b(z) = R_B_DERIVED / (1+z)
 
-    Uses derived constant R_B_DERIVED = 0.257 (not the legacy value 0.260).
+    Uses derived constant R_B_DERIVED      = 0.2545 (not the legacy value 0.260).
     At z_drag = 1060, R_b approx 0.000243 — essentially zero.
     """
     return R_B_DERIVED / (1.0 + z)
@@ -174,7 +176,7 @@ def cs_CAR(z: float) -> float:
 
     c_s(z) = (1/sqrt(3)) * sqrt(1 + R_b(z))
 
-    At z=0: c_s^2 = (1 + 0.257)/3 = 0.419  (derived, not matched)
+    At z=0: c_s^2 = (1 + 0.2545)/3 = 0.4182  (derived, not matched)
     """
     return np.sqrt((1.0 + R_b_of_z(z)) / 3.0)
 
@@ -207,7 +209,7 @@ def compute_r_d_integral(H0: float, z_drag: float = PLANCK_Z_DRAG) -> float:
 
     r_d = (c/H0) * integral_{z_drag}^{inf} c_s(z)/E(z) dz
 
-    Uses derived R_b = 0.257 (Paper 17 v4.0 Section 11.6).
+    Uses derived R_b = 0.2545 (Paper 17 v4.8 Section 11.6).
     Returns approx 158 Mpc. The paper value 146.8 +/- 5 Mpc requires CAMB.
     """
     def integrand(z):
@@ -278,7 +280,7 @@ def compute_S8_analytic(R_b: float = None) -> dict:
     Parameters
     ----------
     R_b : float, optional
-        Defaults to R_B_DERIVED = 0.257. If passed explicitly, used for
+        Defaults to R_B_DERIVED      = 0.2545. If passed explicitly, used for
         comparison purposes only. Do NOT pass 0.260 as a physics input.
     """
     if R_b is None:
@@ -316,7 +318,7 @@ def CAR_predictions(Omega_m: float = PLANCK_OMEGA_M,
     Omega_m : float
         Total matter density (default: Planck 2018 value 0.315).
     R_b : float, optional
-        Baryon-photon coherence ratio. Defaults to R_B_DERIVED = 0.257.
+        Baryon-photon coherence ratio. Defaults to R_B_DERIVED      = 0.2545.
         May be passed ONLY for observational comparison, e.g.:
             CAR_predictions(R_b=R_B_LEGACY_OBS)  # comparison only
         WARNING: Do NOT use R_b = 0.260 as a physics input.
@@ -529,9 +531,9 @@ def print_report() -> None:
     print('  CAMB req. — run camb/equations_car.f90 for these values')
     print()
     print('  EPISTEMIC UPGRADE v3.0 (Paper 17 v4.0 Section 11.6):')
-    print('  R_b = 0.257 DERIVED from SO(3) cascade + QCD junction conditions')
-    print('  c_s^2 updated from 0.420 -> 0.419 (follows from derived R_b)')
-    print('  N_eff_SCT = 2.57 predicted vs SM 3.046 -> CMB-S4 decisive at 16 sigma')
+    print('  R_b = 0.2545 DERIVED from SO(3) cascade + QCD junction conditions (Paper 17 v4.8)')
+    print('  c_s^2 updated from 0.420 -> 0.4182 (Paper 17 v4.8 derived R_b=0.2545)')
+    print('  N_eff_SCT = 2.514 predicted vs SM 3.046 -> CMB-S4 decisive at 17.7 sigma (forecast)')
     print()
     print('  BUGS FIXED IN v2.0 (preserved in v3.0):')
     print('  [1] R_b0 derived (not 4xOmega_b_h2/3xOmega_gam_h2 = 1196.9)')
