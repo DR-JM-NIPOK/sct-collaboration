@@ -53,7 +53,7 @@ N_EFF_VIR  = np.e * (A_STAR - 1)  # = 13.51 effective coherent sources
 C_STAR     = np.e**(-1)      # = 0.3679 coherence amplitude at R_vir
 # R_B0 is now the derived constant from Paper 17 v4.0 Section 11.6
 # DO NOT use 0.260 — that was the legacy matched value
-R_B0       = 0.257           # CAR coherence parameter (DERIVED, Paper 17 v4.0 Section 11.6)
+R_B0       = 0.2545          # CAR coherence parameter (DERIVED, Paper 17 v4.8 Section 11.6)
 
 # Void/virial fractions at z=0 (Papers 7, 11)
 F_VIR_0    = 0.17            # Virialized fraction today
@@ -146,7 +146,7 @@ def C_hat_background() -> float:
     Background coherence enhancement Ĉ_bg.
 
     From CAR (Paper 16):
-        Ĉ_bg = 1 + R_b/3 = 1.0867
+        Ĉ_bg = 1 + R_b/3 = 1.0848
 
     This is the 8.7% gravitational enhancement from background
     carrier coherence, present everywhere (not just virialized regions).
@@ -391,7 +391,7 @@ def coherence_report() -> None:
     print(f'  {"A* = 1/F_B":<30} {A_STAR:>12.4f}  5.970 ± 0.21')
     print(f'  {"N_eff at virialization":<30} {N_EFF_VIR:>12.4f}  13.51')
     print(f'  {"C* = e^-1":<30} {C_STAR:>12.6f}  0.3679')
-    print(f'  {"Ĉ_bg = 1 + R_b/3":<30} {C_hat_background():>12.4f}  1.087')
+    print(f'  {"Ĉ_bg = 1 + R_b/3":<30} {C_hat_background():>12.4f}  1.0848')
     print('-' * w)
     print(f'  {"A_eff(z=0)":<30} {A_eff(0):>12.4f}  ~1.84 (void-avg.)')
     print(f'  {"A_eff(z=2)":<30} {A_eff(2):>12.4f}  ~1.20')
