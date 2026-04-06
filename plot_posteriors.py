@@ -45,7 +45,7 @@ def plot_posteriors(chain_file, output_file):
         # R_b histogram
         axes[0, 1].hist(R_b, bins=50, density=True, alpha=0.7, color='green')
         axes[0, 1].axvline(np.mean(R_b), color='red', linestyle='--', label=f'Mean: {np.mean(R_b):.3f}')
-        axes[0, 1].axvline(0.257, color='black', linestyle='-', label='Derived: 0.257 (Paper 17 v4.0 Section 11.6)')
+        axes[0, 1].axvline(0.2545, color='black', linestyle='-', label='Derived: 0.2545 (Paper 17 v4.8 Section 11.6)')
         axes[0, 1].set_xlabel('R_b')
         axes[0, 1].set_ylabel('Density')
         axes[0, 1].legend()

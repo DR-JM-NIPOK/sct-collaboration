@@ -7,7 +7,7 @@ Implements the full joint likelihood combining all four datasets:
     DESI-DR2 BAO + Planck PR4 CMB + DES-Y6 3×2pt + HSC-Y3 + KiDS-DR5
 
 Parameter space:
-    CAR  : Ω_m ∈ [0.1, 0.5]  (1 free parameter — R_b=0.257 derived, Paper 17 v4.0)
+    CAR  : Ω_m ∈ [0.1, 0.5]  (1 free parameter — R_b=0.2545 derived, Paper 17 v4.8)
     ΛCDM : Ω_b h², Ω_c h², 100θ_s, τ, ln(10¹⁰A_s), n_s  (6 cosmological)
            + up to 42 nuisance parameters (IA, photo-z, baryonic feedback)
 
@@ -62,9 +62,8 @@ def build_combined_likelihood(data: str, verbose: bool = False):
         Log-likelihood for CAR model.
         theta = [Omega_m, R_b]
         """
-        Omega_m, R_b = theta
-        # R_b is a derived constant — NOT reconstructed from Omega_b_h2
-        # Paper 17 v4.0 Section 11.6 closes this circularity
+        Omega_m = theta[0]  # Only 1 sampled parameter
+        # R_b is a derived constant (Paper 17 v4.0 Section 11.6)
         from sct_core import R_B_DERIVED
         try:
             params = CAR_predictions(
@@ -87,14 +86,13 @@ def prior_transform_car(cube):
     Map unit hypercube to CAR prior.
     theta[0] = Omega_m  ~ Uniform[0.1, 0.5]
     theta[0] = Omega_m  ~ Uniform[0.1, 0.5]
-    R_b is now a DERIVED constant = 0.257 +/- 0.032 (Paper 17 v4.0 Section 11.6)
+    R_b is now a DERIVED constant = 0.2545 +/- 0.032 (Paper 17 v4.8 Section 11.6)
     R_b is NOT sampled — this closes the circularity in the Bayes factor.
     """
     from scipy.stats import norm
-    theta = np.zeros(2)
-    theta[0] = 0.1 + cube[0] * 0.4          # Omega_m: uniform [0.1, 0.5]
-    # R_b is now a DERIVED constant — not sampled (Paper 17 v4.0 Section 11.6)
-    # theta has only 1 dim (Omega_m); R_b = R_B_DERIVED = 0.257
+    # CAR has 1 free parameter (Omega_m). R_b=0.2545 is derived (Paper 17 v4.8 Section 11.6)
+    theta = np.zeros(1)
+    theta[0] = 0.1 + cube[0] * 0.4  # Omega_m: uniform [0.1, 0.5]
     return theta
 
 
@@ -111,14 +109,13 @@ def run_polychord_car(model: str, data: str, output_dir: str,
         sys.exit(1)
 
     if model == 'car':
-        nDims    = 2
+        nDims    = 1  # R_b is derived constant — only Omega_m is sampled
         nDerived = 4   # r_d, H0, S8, IA_bias
         log_like_fn, n_liks = build_combined_likelihood(data)
 
         def log_like(theta):
             lnL = log_like_fn(theta)
-            Omega_m, R_b = theta
-            # R_b is derived — not reconstructed from Omega_b_h2
+            Omega_m = theta[0]
             from sct_core import R_B_DERIVED
             params = CAR_predictions(Omega_m=Omega_m, R_b=R_B_DERIVED)
             phi = [params['r_d_Mpc'], params['H0'], params['S8'], params['IA_bias']]
@@ -127,7 +124,7 @@ def run_polychord_car(model: str, data: str, output_dir: str,
         def prior(cube):
             return prior_transform_car(cube)
 
-        param_names = ['Omega_m', 'R_b', 'r_d', 'H0', 'S8', 'IA_bias']
+        param_names = ['Omega_m', 'r_d', 'H0', 'S8', 'IA_bias']  # R_b is derived, not sampled
 
     else:
         print(f"Model '{model}' requires full ΛCDM CAMB integration.")
