@@ -61,7 +61,7 @@ class CombinedLikelihood:
         Parameters
         ----------
         Omega_m : float   Total matter density
-        R_b     : float   CAR coherence parameter. Defaults to R_B_DERIVED=0.257
+        R_b     : float   CAR coherence parameter. Defaults to R_B_DERIVED=0.2545
                           (Paper 17 v4.0 Section 11.6 — derived, not matched).
                           DO NOT pass 0.260 — that was the legacy matched value.
 
@@ -71,7 +71,7 @@ class CombinedLikelihood:
         """
         from sct_core import R_B_DERIVED
         if R_b is None:
-            R_b = R_B_DERIVED  # 0.257 derived (Paper 17 v4.0 Section 11.6)
+            R_b = R_B_DERIVED  # 0.2545 derived (Paper 17 v4.8 Section 11.6)
         preds = CAR_predictions(Omega_m=Omega_m)
 
         # Extract parameters — use CAMB-verified values
