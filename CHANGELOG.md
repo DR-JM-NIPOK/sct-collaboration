@@ -5,195 +5,184 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [3.1.0] — 2026-04-05
+## [4.8.1] — 2026-04-26
 
-### Math Audit & Consistency Fixes
+### NLA Recursive Audit
 
-**Reference:** Full repository audit across all 10 branches — 13 issues corrected.
+This release is the result of a comprehensive Numerical, Logical, and
+Attributional (NLA) recursive audit of every file in the repository.
+"Recursive" here means: when one canonical value changed, every dependent
+claim was traced and updated. The audit identified **eleven inconsistencies**
+across files that previously claimed to be at "v4.8". They are all resolved
+in this release.
 
-#### `sct_core.py` — main and paper17-v4-deriver-Rb branches
-- **r_d docstring corrected:** Simple integral gives 186 Mpc (not 158 Mpc as previously stated). H0 self-consistent iteration does not converge to a physical value from the simple integral alone. CAMB-derived value of 146.8 ± 5 Mpc remains the correct reference.
-- **σ agreement corrected:** R_b = 0.257 agrees with observed 0.260 at **0.07σ** (was incorrectly stated as 0.11σ). Calculation: |0.257−0.260|/√(0.032²+0.032²) = 0.0663σ.
+### Audit Findings — what was wrong before v4.8.1
 
-#### `sct_core.py` — all 10 branches
-- **N_EFF_SCT:** `2.566` → `2.570` to align with all documentation and README which report 2.57.
+| # | Finding | Severity | Status |
+|---|---------|----------|--------|
+| 1 | Two different `sct_core.py` files in repo (root v4.8 derived vs. branches still on v2.0 matched-R_b) | CRITICAL | FIXED |
+| 2 | `camb/equations_car.f90` Fortran patch used standard density-ratio R (≈ 673 at z=0) inside the CAR formula, producing superluminal cs² and unphysical r_drag ≈ 182 Mpc | CRITICAL | FIXED |
+| 3 | `class/perturbations_CAR.patch` had the same bug as #2 | CRITICAL | FIXED |
+| 4 | Hardcoded `R_D_DERIVED = 146.8 Mpc` in sct_core.py was based on a CAMB run that could not be reproduced; canonical value is 161.4 Mpc | CRITICAL | FIXED |
+| 5 | Hardcoded `'H0_CAMB': 70.4` returned without verification — the self-consistent θ* iteration is mathematically degenerate at fixed Ωm and converges spuriously | CRITICAL | DOCUMENTED |
+| 6 | `predictions.csv` row P03 stated `r_d = 149.2 ± 0.4 Mpc` and "CONFIRMED" — does not match any reproducible CAMB or Python output | CRITICAL | FIXED |
+| 7 | `predictions.csv` row P04 stated `b_IA = 1.087 ± 0.005` — should be 1.0848 ± 0.011 (derived from R_b = 0.2545) | FLAG | FIXED |
+| 8 | `validation_report()` in sct_core.py used `S8_K = 0.815` for KiDS-DR5 — that was an internal preliminary value; published is 0.788 ± 0.014 | CRITICAL | FIXED |
+| 9 | `equations_car_test.py` asserted `144.0 < r_d < 161.0`, a tolerance loose enough to pass for unmodified ΛCDM | FLAG | FIXED |
+| 10 | `equations_car_test.py` declared "expected r_drag ≈ 149.1 Mpc" with the comment "if you get ~150 Mpc the patch was not applied" — both numbers wrong for stated parameters | CRITICAL | FIXED |
+| 11 | CHANGELOG.md still described v4.0 (R_b = 0.257, N_eff = 2.57) while code was at v4.8 (R_b = 0.2545, N_eff = 2.514) | FLAG | FIXED |
 
-#### `sct_core.py` — 8 non-main branches (camb, chains, class, data, docker, figures, likelihoods, tests)
-- **Broken sentence fragment repaired:** "The old matched value 0.260 BBN inputs at any standard cosmological epoch" was a corrupted paragraph introduced during the Paper 17 v4.0 update. Replaced with a coherent explanation.
+### Major scientific findings of the audit
 
-#### `sct_core.py` — likelihoods branch
-- **Legacy keys added:** `H0_km_s_Mpc` and `theta_star` added to `CAR_predictions()` return dict so that `combined_likelihood.py` does not raise a `KeyError` when accessing these keys. Previously would crash at runtime.
+The audit established that **the CAR ansatz, when implemented honestly,
+predicts r_d ≈ 161.4 Mpc**, not the previously claimed 146.8 Mpc or 149.1 Mpc.
+This means the CAR ansatz **does NOT close the DESI-DR2 BAO tension**
+(observed r_d = 147 ± 1 Mpc); under canonical CAR, r_d sits 14σ above DESI
+and 28σ above Planck. By contrast:
 
-#### `coherence.py` — main and paper17-v4-deriver-Rb branches
-- **Report label corrected:** `C_hat_background()` report column said `1.087` but actual computed value with R_b=0.257 is **1.08567**. Updated to `1.086`.
+- **S8 = 0.7838 ± 0.015** remains robust and matches DES-Y6 (0.780 ± 0.012),
+  KiDS-DR5 (0.788 ± 0.014), and HSC-Y3 (0.776 ± 0.020) within 1σ.
+- **b_IA = 1.0848 ± 0.011** matches IA analyses to better than 0.5σ.
+- **N_eff_SCT = 2.514 ± 0.05** (predicted) remains a clean falsifiable
+  CMB-S4 test, separated from the SM N_eff = 3.046 by 17.7σ at the
+  forecast CMB-S4 sensitivity (σ_N_eff ≈ 0.03).
 
-#### `class_car_test.py` — class branch
-- **Test 1 rewritten:** Removed assertion `abs(R_b0 - 4*Ω_b/(3*Ω_γ)) < 1e-6`. With R_B0_PAPER now equal to the derived constant 0.257, this was comparing 0.257 against 1196.9 — guaranteed failure. Now asserts R_b0 == 0.257 (derived constant).
-- **Test 2 fixed:** `preds[c_s2_z0]` → `preds[cs2_z0_CAR]`. The key name in the branch sct_core.py return dict is `cs2_z0_CAR`, not `c_s2_z0`. Was a KeyError.
-- **Tests 3 & 4 updated:** r_d and H0 range assertions updated to match actual simple-integral output (~186 Mpc, ~52 km/s/Mpc). CAMB values are the physical reference.
+The CAR ansatz therefore needs reframing as resolving S8 and contributing
+to (but not closing) the H0 tension, while the BAO sector requires
+additional physics. **Paper 16 v3.0 will rewrite the BAO discussion**;
+S8/b_IA results carry forward unchanged.
 
-#### `test_sct_core.py` — tests branch
-- **b_IA assertions corrected:** Target changed from `1.087` to `1.086`; tolerance widened from `0.001` to `0.002`. With R_b=0.257, b_IA = 1+0.257/3 = 1.08567. The old 0.001 tolerance caused guaranteed failure.
+### Changed files in v4.8.1
 
-#### `run_polychord.py` — chains branch
-- **nDims corrected:** `nDims = 2` → `nDims = 1`. R_b is now a derived constant and is not sampled. Having nDims=2 with only 1 effective dimension caused PolyChord to waste half its computational effort. Prior transform updated to return a 1-element array.
+#### `sct_core.py` (root) — synchronized to canonical
+- `R_D_DERIVED`: 146.8 → **161.4** Mpc (with R_D_UNCERTAINTY 5.0 → 0.3)
+- `H0_CAMB` hardcoding: removed (now derived from self-consistent integral
+  iteration with documented degeneracy caveat)
+- `validation_report()`: KiDS-DR5 S8 from 0.815 → **0.788 ± 0.014** (published value)
+- `OBSERVED_*` constants added with provenance for transparent comparison
+- Documentation rewritten with explicit r_d audit note
+- Version stamps and CLI banner updated to v4.8.1
 
-#### `config_car.ini` — chains branch
-- **Comment corrected:** Header said "CAR has 2 free parameters: Omega_m and R_b". Updated to "CAR has 1 free parameter: Omega_m — R_b=0.257 is derived".
+#### Branch `sct_core.py` copies — replaced
+- `camb/sct_core.py`, `chains/sct_core.py`, `class/sct_core.py`,
+  `data/sct_core.py`, `docker/sct_core.py`, `figures/sct_core.py`,
+  `likelihoods/sct_core.py`, `tests/sct_core.py`,
+  `paper17-v4-deriver-Rb/sct_core.py`
+- All replaced with byte-identical copy of canonical root sct_core.py.
+  Previously these were on a v2.0/v3.0 hybrid version with R_b = 0.260
+  and the broken 4Ω_b/(3Ω_γ) formula.
 
-#### `equations_car.f90` — camb branch
-- **Precision corrected:** Subroutine variables changed from `real` (single precision) to `real(dl)` (double precision) to match CAMB internal precision. Added `use Precision` statement. Using single precision in a double-precision Boltzmann code introduces rounding errors.
+#### `camb/equations_car.f90` — corrected
+- Replaced `R = 3*grho_b/(4*grho_g); cs2 = (1+R)/3` (which gave
+  superluminal cs² at z=0, unphysical) with the canonical CAR
+  prescription using SCT-derived R_b(z) = R_B_DERIVED/(1+z).
+- Now produces r_drag ≈ 161.4 Mpc when applied to CAMB at H0=70.4.
 
+#### `camb/equations_CAR.patch` — corrected
+- Updated patch text to reflect Fortran fix above.
+- Patch now contains explicit warning: "do NOT reuse standard R in CAR formula".
 
----
+#### `camb/equations_car_test.py` — corrected
+- Removed loose `144.0 < r_d < 161.0` tolerance (which passed for unmodified ΛCDM).
+- New tolerance: `|r_d - 161.4| < 0.5` for canonical Python check.
+- Replaced erroneous "if you get ~150 Mpc the patch was not applied" comment.
+- Added `test_canonical_constants()` for first-line sanity check.
+- Added `test_camb_patched()` clearly distinguishing PASS/INFO/FAIL with
+  diagnostic guidance for each failure mode.
 
-## [3.0.0] — 2026-04-04
+#### `class/perturbations_CAR.patch` — corrected (same fix as Fortran)
+#### `class/class_car_test.py` — corrected (same fix as CAMB test)
 
-### Paper 17 v4.0 Epistemic Upgrade
+#### `predictions.csv` — corrected
+- P01: S8 0.783 → **0.7838** (full precision from canonical analytic chain)
+- P03: r_d 149.2 ± 0.4 "CONFIRMED" → **161.4 ± 0.3 "DOES NOT CLOSE TENSION"**
+- P04: b_IA 1.087 ± 0.005 → **1.0848 ± 0.011** (canonical, audit-corrected)
+- P31 (NEW): N_eff_SCT = 2.514 ± 0.05 from Paper 17 v4.8 §11.6
+- P32 (NEW): R_b derived = 0.2545 ± 0.032 from Paper 17 v4.8 §11.6
 
-**Reference:** Paper 17 v4.0 — DOI: [10.13140/RG.2.2.14355.03366](https://doi.org/10.13140/RG.2.2.14355.03366) — Section 11.6
+#### `CHANGELOG.md` (this file) — fully synchronized to v4.8.1
+#### `README.md` (root) — updated with v4.8.1 status and audit summary
 
-**Scientific rationale:**
-R_b transitions from a **matched observational parameter** (v2.0, Paper 16) to a
-**derived constant of the SCT framework** (v3.0, Paper 17 v4.0 §11.6). The
-derivation uses two purely geometric/field-theoretic inputs:
+### Files not changed in v4.8.1
 
-1. **SO(3) angular momentum structure** of the collision cascade → N_cascade = 3
-   (three independent cascade planes from the SO(3) symmetry group)
-2. **QCD phase transition boundary correction** from Paper 14 Israel-Darmois
-   junction conditions → 13.6% energy loss at the QCD boundary
+These were checked by the audit and confirmed to be already consistent:
+- `bh_interior.py`, `coherence.py`, `growth.py`, `hereditary.py` — no
+  CAR-dependent values
+- `tensions.csv` — observational data, independent of theoretical chain
+- `data/mock_data_generator.py`, `figures/make_all_figures.py` —
+  use sct_core.py, automatically inherit corrections via update
+- `chains/run_polychord.py`, `chains/compute_evidence.py`,
+  `chains/plot_posteriors.py` — implementation-specific, not affected by
+  R_b value (they sample a likelihood already constructed from sct_core.py)
+- `chains/config_*.ini` — sampling parameters, no CAR values
+- `likelihoods/*.py` — call sct_core.py, automatically inherit corrections
 
-No observational input is required. The result R_b = 0.257 ± 0.032 agrees
-with the previously matched value R_b = 0.260 at **0.11 sigma**, closing the
-circularity in the CAR Bayes factor calculation.
+### How to verify the audit
 
-**New prediction:** N_eff_SCT = 2.57 ± 0.05 (vs Standard Model 3.046). These
-values are on opposite sides of 3.000. CMB-S4 will distinguish them at **16 sigma**
-— the test is decisive and falsifiable.
+After cloning v4.8.1:
 
----
+```bash
+python3 sct_core.py --validate     # full report
+python3 -m pytest tests/           # all tests should pass
+python3 camb/equations_car_test.py # standalone (no CAMB) verification
+```
 
-### Files Changed
-
-#### `sct_core.py`
-
-- **Epistemic upgrade v2.0 → v3.0** documented in module docstring
-- Added derived constants block at top of file:
-  - `R_B_DERIVED = 0.257` (was hardcoded `R_B0 = 0.260`)
-  - `R_B_UNCERTAINTY = 0.032`
-  - `CS2_DERIVED = 0.41900` (updated from 0.420; follows from derived R_b)
-  - `CS2_UNCERTAINTY = 0.011`
-  - `C_HAT_BG_DERIVED = 1.08567` (updated from 1.087)
-  - `C_HAT_BG_UNCERTAINTY = 0.011`
-  - `R_D_DERIVED = 146.8` Mpc (Paper 17 v4.0)
-  - `R_D_UNCERTAINTY = 5.0` Mpc
-  - `N_EFF_SCT = 2.566` (new prediction)
-  - `N_EFF_UNCERTAINTY = 0.05`
-  - `N_EFF_SM = 3.046`
-  - `R_B_LEGACY_OBS = 0.260` (reference only — DO NOT USE AS INPUT)
-- `R_B0` alias set to `R_B_DERIVED` — all internal computation uses derived value
-- `CAR_predictions()`: now defaults to derived R_b; accepts optional `R_b` argument
-  for comparison purposes only; never computes R_b from Omega_b_h2
-- `compute_S8_analytic()`: updated to use derived R_b with full uncertainty propagation
-- Added `validation_report()` function: prints all predictions with sigma values vs
-  observations, N_eff CMB-S4 status, and legacy comparison table
-- `print_report()`: updated to v3.0, shows derived constants and N_eff prediction
-- All docstrings updated with Paper 17 v4.0 §11.6 citation
-- Warning added: `R_b = 0.260 must NOT be used as input`
-
-**Values changed:**
-  - `R_B0`: 0.260 → **0.257** (derived)
-  - `c_s²/c²`: 0.420 → **0.419** (derived; follows from R_b)
-  - `C_hat_bg`: 1.087 → **1.086** (derived; follows from R_b)
-  - `r_d` (CAMB): 149.2 → **146.8 ± 5 Mpc** (Paper 17 v4.0)
-  - `N_eff_SCT`: — → **2.57 ± 0.05** (new prediction)
-
-#### `README.md`
-
-- Added **⚠ WARNING** block: R_b = 0.260 must not be used as input
-- Added **Paper 17 v4.0** to Paper Reference section with full DOI
-- Added **Key Constants table** (all DERIVED):
-  - R_b = 0.257 ± 0.032 DERIVED
-  - c_s² = 0.419 ± 0.011 DERIVED
-  - Ĉ_bg = 1.086 ± 0.011 DERIVED
-  - r_d = 146.8 ± 5 Mpc DERIVED
-  - N_eff SCT = 2.57 ± 0.05 PREDICTED — CMB-S4 16σ
-- Updated Verified Outputs table: R_b0 row changed from `0.260 / Matched input`
-  to `0.257 ± 0.032 / DERIVED`
-- Added `python sct_core.py --validate` to Quick Start
-- Added `CHANGELOG.md` to Repository Contents table
-- Version header updated to v3.0
-
-#### `SETUP_INSTRUCTIONS.md`
-
-- Added **⚠ WARNING** block at top: R_b = 0.260 must not be used as input
-- Version header updated from v2.0 to v3.0
-- Expected output block: `R_b0` row updated to `0.2570 (derived)`, label changed
-  from `analytic` to `derived`
-- Bug fix note [1]: updated from `R_b0 = 0.260` to `R_b0 = 0.257 derived
-  (Paper 17 v4.0 §11.6) — DO NOT compute from Omega_b_h2`
-- **Key Parameters table** (§ 9): R_b0 row updated:
-  - Value: `0.260` → `0.257 ± 0.032`
-  - Status: `Matched observational input` → `Derived constant — Paper 17 v4.0 §11.6`
-- Troubleshooting: updated R_b0 bug description to reference derived value
-- All remaining instances of `0.420` replaced with `0.419`
-- All remaining instances of `0.260` replaced with `0.257 (derived, Paper 17 v4.0)`
-
-#### `growth.py`
-
-- Import updated: `R_B0` now sourced from `sct_core.R_B_DERIVED` (0.257),
-  not from `coherence.R_B0` (which was 0.260)
-- Comment added: `DO NOT use 0.260 — use R_B_DERIVED = 0.257`
-- `cs2_CAR_background()` docstring: `cs² = 0.420` → `cs² = 0.419 (derived, R_b=0.257)`
-- `cs2_CAR_perturbation()` docstring: `cs² = 0.420` → `cs² = 0.419 (derived, Paper 17 v4.0 §11.6)`
-- Prose: `Full R_b0 = 0.260 applies` → `Full R_b0 = 0.257 (derived, Paper 17 v4.0 §11.6) applies`
-
-**Values changed:**
-  - All `cs² = 0.420` references → **0.419**
-  - `R_B0` source: coherence.py (0.260) → sct_core.py derived (0.257)
-
-#### `coherence.py`
-
-- Line 54: `R_B0 = 0.260` → `R_B0 = 0.257` with updated comment:
-  `# CAR coherence parameter (DERIVED, Paper 17 v4.0 Section 11.6)`
-- Warning comment added: `DO NOT use 0.260 — that was the legacy matched value`
-
-**Values changed:**
-  - `R_B0`: 0.260 → **0.257** (derived)
-  - All downstream quantities (A_eff, C_hat_background, etc.) update automatically
-
-#### `CHANGELOG.md` (this file)
-
-- Created new file (did not previously exist)
+The `--validate` output should show:
+- R_b = 0.2545 ± 0.032 derived
+- c_s² = 0.41817 derived
+- b_IA = 1.0848 derived
+- S8 = 0.7838 (numerical), 0.7988 (analytic)
+- r_d = 161.40 Mpc (canonical CAR)
+- N_eff = 2.514 ± 0.05 (CMB-S4 separation 17.7σ)
 
 ---
 
-## [2.0.0] — 2026-04-01
+## [4.8.0] — 2026-04-06
 
-### Three Critical Bug Fixes
+### Epistemic upgrade — R_b transitions to derived constant
 
-**Reference:** Paper 16 — DOI: 10.13140/RG.2.2.10321.29288
+Paper 17 v4.8 Section 11.6 derives R_b = 0.2545 ± 0.032 from first
+principles: SO(3) cascade angular momentum + QCD junction conditions
+(Israel-Darmois, Paper 14, 13.6% loss). No observational input.
 
-#### Bug 1 — R_b0 convention (CRITICAL)
-- **Broken:** `R_b0 = 4×Ω_b_h²/(3×Ω_γ_h²) = 1196.9` (physical z=0 ratio, wrong formula)
-- **Fixed:** `R_b0 = 0.260` (CAR coherence parameter, Paper 16 §2.1)
-- **Effect:** S8: 0.042 → 0.783; b_IA: 400 → 1.087
+- `R_B_DERIVED = 0.2545` replaces matched value 0.260
+- `c_s² = 0.41817` derived from (1 + R_b)/3
+- `C_hat_bg = 1.08483` derived from 1 + R_b/3
+- `N_eff_SCT = 2.514 ± 0.05` predicted (CMB-S4 testable)
 
-#### Bug 2 — θ* unit conversion (CRITICAL)
-- **Broken:** `theta_star_rad = theta_star × π/180` (treats as degrees)
-- **Fixed:** `theta_star_rad = theta_star / 100` (Planck reports 100×θ*)
-- **Effect:** H0: 1.3 → 70.4 km/s/Mpc
-
-#### Bug 3 — r_d integral normalisation
-- **Broken:** `r_d = integral × c/100` (assumes H0=100)
-- **Fixed:** `r_d = integral × c/H0`
-- **Effect:** r_d: 133 → 149 Mpc
+⚠ Known issue at v4.8.0 (resolved in v4.8.1): the CAMB Fortran patch
+and most branch copies of sct_core.py were not synchronized. v4.8.1
+performs the full sweep.
 
 ---
 
-## [1.0.0] — 2026-03-01
+## [4.0.0] — 2026-04-01 (superseded by v4.8.0/v4.8.1)
 
-### Initial release
+Initial epistemic upgrade — R_b = 0.257 derivation (later refined to 0.2545
+in v4.8). N_eff prediction = 2.57 (later refined to 2.514).
 
-- `sct_core.py` v1.0 — CAR Core Calculator
-- Paper 16 submitted: DOI 10.13140/RG.2.2.10321.29288
+---
+
+## [2.0.0] — 2026-04 (superseded)
+
+Three critical bugs corrected:
+- Bug 1: R_b0 convention (4·Ω_b·h² / 3·Ω_γ·h² is NOT the SCT R_b)
+- Bug 2: theta_star unit conversion (Planck reports 100·θ*, not degrees)
+- Bug 3: r_d integral normalization (× c/H0, not × c/100)
+
+---
+
+## [1.0.0] — 2026-03
+
+Original release. R_b = 0.260 as matched observational parameter.
+Subsequently identified as having internal circularity in Bayesian
+evidence calculations (now resolved by v4.8 derivation).
+
+---
+
+## Authoring & License
+
+DR JM NIPOK | N.J.I.T. | ORCID 0009-0006-3940-4450
+Paper 16 DOI: 10.13140/RG.2.2.10321.29288
+Paper 17 DOI: 10.13140/RG.2.2.14355.03366
+License: GPL-3.0
