@@ -240,12 +240,12 @@ def S8_SCT(S8_Planck: float = 0.832) -> dict:
         'S8_Planck':       S8_Planck,
         'DES_Y6':          0.780,
         'DES_Y6_err':      0.012,
-        'KiDS_DR5':        0.815,
-        'KiDS_DR5_err':    0.016,
+        'KiDS_DR5':        0.788,   # v4.8.1 audit: published (was internal 0.815)
+        'KiDS_DR5_err':    0.014,
         'HSC_Y3':          0.776,
         'HSC_Y3_err':      0.020,
         'sigma_DES':       abs(S8_numeric - 0.780) / 0.012,
-        'sigma_KiDS':      abs(S8_numeric - 0.815) / 0.016,
+        'sigma_KiDS':      abs(S8_numeric - 0.788) / 0.014,
         'sigma_HSC':       abs(S8_numeric - 0.776) / 0.020,
     }
 

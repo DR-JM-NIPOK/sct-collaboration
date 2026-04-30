@@ -1,8 +1,8 @@
 ID,Paper,Observable,Predicted,Uncertainty,Dataset,Status,Falsification_Criterion
-P01,P16,S8,0.783,±0.015,"DES-Y6, KiDS-DR5, HSC-Y3",CONFIRMED,S8 > 0.81 at 3σ from Euclid Y1 falsifies
-P02,P16,H0,70.4,±0.5 km/s/Mpc,DESI-DR2 + BAO,CONFIRMED,H0 < 68.5 or > 72.5 at 3σ falsifies
-P03,P16,r_d,149.2,±0.4 Mpc,DESI-DR2 BAO,CONFIRMED,r_d outside 147-152 Mpc at 3σ falsifies
-P04,P16,b_IA,1.087,±0.005,Weak lensing IA analysis,PREDICTED,b_IA < 1.05 or > 1.13 at 3σ falsifies
+P01,P16,S8,0.7838,±0.015,"DES-Y6, KiDS-DR5, HSC-Y3",CONFIRMED,S8 > 0.81 at 3σ from Euclid Y1 falsifies
+P02,P16,H0,70.4,±0.5 km/s/Mpc,DESI-DR2 + BAO,CONSISTENT,H0 < 68.5 or > 72.5 at 3σ falsifies
+P03,P16,r_d,161.4,±0.3 Mpc (audit v4.8.1),DESI-DR2 BAO,DOES NOT CLOSE TENSION,r_d outside 159-164 Mpc at 3σ would falsify CAR ansatz
+P04,P16,b_IA,1.0848,±0.011 (audit v4.8.1),Weak lensing IA analysis,PREDICTED,b_IA < 1.05 or > 1.13 at 3σ falsifies
 P05,P16,n_s,0.9655,"(28/29, exact)","Planck, CMB-S4",CONFIRMED (0.15σ),n_s < 0.960 or > 0.972 at 3σ falsifies
 P06,"P6,P13",A_star,5.970,±0.21,X-COP cluster sample,CONFIRMED,A* outside 5.5-6.5 at 2σ from CHANDRA-all falsifies
 P07,"P6,P13",f_b,0.1675,±0.006,X-COP 12 clusters,CONFIRMED,f_b × A* ≠ 1.000 ± 0.05 at 2σ falsifies
@@ -29,3 +29,5 @@ P27,P16,Euclid Y1 S8,0.781,±0.009,Euclid Year 1 (2026+),PENDING,S8 > 0.81 at 3�
 P28,P11,Slip parameter eta,1.0,"(exact, G_4X=0)",CMB lensing vs galaxy,PREDICTED,eta > 1.05 at 3σ from Euclid falsifies GW constraint
 P29,P7,Void expansion rate,enhanced vs clusters,qualitative,DESI void catalogue,PREDICTED,No void-cluster Λ_eff difference in DESI DR2+ falsifies
 P30,P5,J scaling exponent,2/3,(j ∝ M^{2/3}),Disk galaxy angular momentum,CONFIRMED,Exponent outside 0.55-0.78 at 3σ from IllustrisTNG+obs falsifies
+P31,P17,N_eff CMB-S4,2.514,±0.05 (Paper 17 v4.8 §11.6),"CMB-S4, Simons Observatory",PREDICTED,N_eff > 3.0 from CMB-S4 at 3σ falsifies SCT
+P32,P17,R_b derived,0.2545,±0.032 (Paper 17 v4.8 §11.6),Geometric derivation only,DERIVED,Conflict with future independent geometric derivation

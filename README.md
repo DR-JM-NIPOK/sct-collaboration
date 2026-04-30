@@ -1,145 +1,166 @@
-# SCT Cosmology Series
-## Codified Acoustic Relation (CAR) — Derived-Parameter Cosmology
+# sct-collaboration v4.8.1
 
-**Version 3.0** | April 2026 | Paper 17 v4.8 epistemic upgrade: R_b derived from first principles
-If you downloaded this code before April 2026, please re-clone.
+**Successive Collision Theory (SCT) — public reference implementation**
 
----
-
-### ⚠ WARNING — DO NOT USE R_b = 0.260 AS INPUT
-
-R_b = 0.260 was the **matched observational value** in v1.0/v2.0 (Paper 16).
-As of v3.0, R_b = **0.2545 ± 0.032 is a DERIVED constant** (Paper 17 v4.8 §11.6).
-Passing 0.260 to `sct_core.py` introduces a circularity that the Paper 17
-derivation eliminates. The module will accept it as a legacy comparison argument
-only — see `CAR_predictions(R_b=R_B_LEGACY_OBS)` for that use case.
+DR JM NIPOK · N.J.I.T. · ORCID [0009-0006-3940-4450](https://orcid.org/0009-0006-3940-4450)
+Paper 16 DOI: [10.13140/RG.2.2.10321.29288](https://doi.org/10.13140/RG.2.2.10321.29288)
+Paper 17 DOI: [10.13140/RG.2.2.14355.03366](https://doi.org/10.13140/RG.2.2.14355.03366)
+License: GPL-3.0
 
 ---
 
-### Paper References
+## What is in this release
 
-**Paper 16:**
-NIPOK, DR JM — *"From Chaos to Codified Acoustics: A Parameter-Free Collision
-Geometry That Unifies DESI DR2, DES Y6, HSC Y3, and KiDS DR5 While Resolving
-H₀ and S₈ Tensions"* — SCT Cosmology Series Paper #16 (2026)
-DOI: [10.13140/RG.2.2.10321.29288](https://doi.org/10.13140/RG.2.2.10321.29288)
+This is the post-NLA-recursive-audit release of the SCT computational
+framework. Every file has been brought into consistency with the canonical
+Paper 17 v4.8 derivation of R_b, and the audit findings are documented
+in [CHANGELOG.md](CHANGELOG.md).
 
-**Paper 17 v4.8 (current):**
-NIPOK, DR JM — *"R_b Derived from First Principles: SO(3) Cascade Geometry and
-QCD Junction Conditions Eliminate the Last Matched Parameter of CAR"* —
-SCT Cosmology Series Paper #17 v4.0 (2026)
-DOI: [10.13140/RG.2.2.14355.03366](https://doi.org/10.13140/RG.2.2.14355.03366)
-Section 11.6 contains the derivation of R_b = 0.2545 ± 0.032.
+### Status snapshot (verified by audit, April 2026)
 
-OSF Archive: [doi.org/10.17605/OSF.IO/T8ZNY](https://doi.org/10.17605/OSF.IO/T8ZNY)
-ORCID: [0009-0006-3940-4450](https://orcid.org/0009-0006-3940-4450)
+| Quantity | Value | Status |
+|---|---|---|
+| R_b (derived, §11.6) | 0.2545 ± 0.032 | Derived from SO(3) cascade + QCD junction |
+| c_s² (z=0) | 0.41817 ± 0.011 | Derived from (1 + R_b)/3 |
+| b_IA | 1.0848 ± 0.011 | Matches IA analyses (DES-Y6, KiDS-DR5, HSC-Y3) |
+| S8 (analytic) | 0.7988 | From 0.832 × (1 + R_b/3)^(-1/2) |
+| S8 (numerical) | 0.7838 ± 0.015 | Matches DES-Y6 0.780 ± 0.012 within 0.4σ |
+| r_d (canonical CAR) | 161.4 ± 0.3 Mpc | DOES NOT close DESI-DR2 tension (147 ± 1) |
+| N_eff (predicted) | 2.514 ± 0.05 | CMB-S4 testable at 17.7σ vs SM N_eff = 3.046 |
+
+### Audit-disclosed honest finding
+
+The CAR ansatz, computed honestly from R_b(z) = 0.2545/(1+z) with
+c_s²(z) = (1 + R_b(z))/3, predicts r_d ≈ 161.4 Mpc. This **does not close
+the DESI-DR2 BAO tension** — earlier claims of r_d ≈ 146.8 or 149.1 Mpc
+could not be reproduced and are retracted. The S8 and b_IA predictions
+remain robust and observationally consistent. Paper 16 v3.0 will be
+rewritten to reflect this. See `CHANGELOG.md` for full audit details.
 
 ---
 
-### Quick Start
+## Repository structure
+
+```
+sct-collaboration/
+├── sct_core.py              ← Canonical CAR core calculator (v4.8.1)
+├── predictions.csv          ← All SCT predictions w/ falsification criteria
+├── tensions.csv             ← Observational tensions reference
+├── bh_interior.py           ← Black hole interior structure (Paper 9)
+├── coherence.py             ← Coherence cascade calculations (Paper 5)
+├── growth.py                ← Structure growth (Paper 11)
+├── hereditary.py            ← Hereditary mode propagation (Paper 13)
+├── camb/                    ← CAMB modification (corrected v4.8.1)
+│   ├── equations_car.f90
+│   ├── equations_CAR.patch
+│   └── equations_car_test.py
+├── class/                   ← CLASS modification (corrected v4.8.1)
+│   ├── perturbations_CAR.patch
+│   └── class_car_test.py
+├── chains/                  ← MCMC / nested-sampling configurations
+├── likelihoods/             ← Per-survey likelihoods (DESI, DES, HSC, KiDS, Planck)
+├── data/                    ← Mock data generator
+├── figures/                 ← Figure generation scripts
+├── docker/                  ← Reproducible Docker environment
+├── tests/                   ← Pytest suite
+└── paper17-v4-deriver-Rb/   ← Paper 17 §11.6 R_b derivation reference
+```
+
+---
+
+## Quick start
+
+### Verify canonical predictions (no CAMB required)
 
 ```bash
 git clone https://github.com/DR-JM-NIPOK/sct-collaboration.git
 cd sct-collaboration
 pip install -r requirements.txt
-python sct_core.py
-python sct_core.py --validate   # full sigma comparison vs observations
+python3 sct_core.py                # compact summary
+python3 sct_core.py --validate     # full validation report with σ values
+python3 sct_core.py --verbose      # detailed intermediate values
+```
+
+Expected output highlights:
+```
+R_b0  (DERIVED §11.6)      0.2545
+c_s² = (1+R_b)/3           0.41817
+b_IA  = 1 + R_b/3          1.08483
+S8 (analytic)              0.7988
+S8 (numerical, −0.015)     0.7838
+r_d  (canonical, Mpc)      161.40       [does NOT close DESI tension]
+N_eff (SCT predicted)      2.514        CMB-S4 separation 17.7σ
+```
+
+### Apply the CAMB CAR patch (optional — for full Boltzmann run)
+
+```bash
+cd <your-camb-source-dir>
+patch -p1 < /path/to/sct-collaboration/camb/equations_CAR.patch
+make                                    # rebuild CAMB
+cd /path/to/sct-collaboration
+python3 camb/equations_car_test.py     # verify
+```
+
+A successful patch produces `r_drag ≈ 161.4 Mpc` at H0=70.4. If you get
+`r_drag ≈ 144 Mpc` (standard ΛCDM unmodified) or any value far from 161.4,
+the patch did not take effect — the test script's diagnostic output will
+indicate this clearly.
+
+### Run the test suite
+
+```bash
+pytest tests/ -v
+```
+
+### Docker (reproducible environment)
+
+```bash
+docker build -t sct-coll:v4.8.1 -f docker/Dockerfile .
+docker run --rm -v $(pwd):/workspace sct-coll:v4.8.1 python3 sct_core.py --validate
 ```
 
 ---
 
-### Key Constants (v3.0, all DERIVED — Paper 17 v4.8 §11.6)
+## Papers in the SCT Cosmology Series
 
-| Constant | Value | Status | Source |
-|----------|-------|--------|--------|
-| R_b | **0.2545 ± 0.032** | DERIVED | SO(3) cascade + QCD junction conditions |
-| c_s² / c² | **0.4182 ± 0.011** | DERIVED | (1 + R_b) / 3 with derived R_b |
-| Ĉ_bg | **1.0848 ± 0.011** | DERIVED | 1 + R_b/3 with derived R_b |
-| r_d | **146.8 ± 5 Mpc** | DERIVED | CAMB + CAR patch, Paper 17 v4.8 |
-| N_eff (SCT) | **2.514 ± 0.05** | PREDICTED — CMB-S4 forecast at 17.7σ | Paper 17 v4.8 §11.6 |
-| N_eff (SM) | 3.046 | Standard Model | Mangano et al. 2005 |
+The repository implements computational tools for Papers 1–46 of the
+SCT Cosmology Series. Direct dependencies:
 
-N_eff_SCT = 2.514 and N_eff_SM = 3.046 are on **opposite sides of 3.000**.
-CMB-S4 will separate these at **17.7 sigma (forecast)** — the test is decisive.
+- **Paper 16** — From Chaos to Codified Acoustics (CAR ansatz; r_d, S8, H0 predictions)
+- **Paper 17** — From Chaos to Closure (Section 11.6 derives R_b = 0.2545)
+- **Paper 14** — From Chaos to Convergence (QCD junction conditions, 13.6% loss)
+- **Paper 5** — From Chaos to Cascading Coherence (SO(3) angular momentum)
+
+Full series: https://thenaturalstateofnature.org/PREPRINTS/From_Chaos_To_Consilience/
 
 ---
 
-### Verified Outputs (v3.0)
+## v4.8.1 audit acknowledgment
 
-| Quantity | CAR | ΛCDM | Source |
-|----------|-----|------|--------|
-| R_b0 | **0.2545 ± 0.032** | — | DERIVED (Paper 17 v4.8 §11.6) |
-| c_s² | **0.4182 ± 0.011** | 0.333 | DERIVED |
-| S₈ | **0.783** | 0.832 | Analytic ✓ verified |
-| b_IA | **1.0848** | 1.000 | Analytic ✓ verified |
-| r_d | **146.8 ± 5 Mpc** | 147.1 Mpc | CAMB required |
-| H₀ | **70.4 km/s/Mpc** | 67.4 | CAMB required |
-| N_eff | **2.514 ± 0.05** | 3.046 | PREDICTED — CMB-S4 |
-
-S₈ and b_IA are independently verified analytically.
-r_d and H₀ require CAMB with `camb/equations_car.f90` patch applied.
+The NLA recursive audit that produced this release identified eleven
+inconsistencies between canonical Python (sct_core.py at root) and
+the rest of the repository — including two critical bugs in the CAMB
+and CLASS Fortran/C patches that produced unphysical (superluminal)
+sound speeds at z=0. All findings are documented in `CHANGELOG.md`.
+The audit did not change any derived theoretical constants from
+Paper 17 v4.8 §11.6; it only ensured every file in the repository
+implements them correctly and reports outputs that the code can
+actually reproduce.
 
 ---
 
-### What Changed
+## License & citation
 
-#### v3.0 — Paper 17 v4.8 Epistemic Upgrade (April 2026)
+GPL-3.0. If you use this code in published work, please cite:
 
-R_b transitions from a **matched observational parameter** to a **derived constant**:
-
-| Item | v2.0 (matched) | v3.0 (derived) | Scientific reason |
-|------|----------------|----------------|-------------------|
-| R_b | 0.260 (observed) | **0.2545 ± 0.032** | SO(3) cascade + QCD junction |
-| c_s² | 0.420 (ΛCDM ref) | **0.4182 ± 0.011** | Follows from derived R_b |
-| Ĉ_bg | 1.087 (ΛCDM ref) | **1.0848 ± 0.011** | Follows from derived R_b |
-| N_eff | — | **2.514 ± 0.05 (new)** | CMB-S4 test at 16σ |
-
-The derivation uses N_cascade = 3 from SO(3) angular momentum structure and
-a 13.6% energy loss from Paper 14 Israel-Darmois junction conditions. No
-observational input is required. Agreement with observed R_b = 0.260 is at
-0.11σ — a post-diction that closes the Bayesian circularity.
-
-#### v2.0 — Three Critical Bugs Corrected (April 2026)
-
-| Bug | Broken | Fixed | Effect |
-|-----|--------|-------|--------|
-| R_b0 convention | 4Ω_bh²/3Ω_γh² = **1196.9** | **0.2545** (derived, P17 v4.8) | S8: 0.042→0.783 |
-| θ* units | 1.04105 × π/180 (degrees) | 1.04105 / **100** (radians) | H0: 1.3→70.4 |
-| r_d normalisation | integral × c/**100** | integral × c/**H0** | r_d: 133→149 Mpc |
-
----
-
-### Repository Contents
-
-| File/Directory | Description |
-|---|---|
-| `sct_core.py` | Core CAR calculator — **v3.0, R_b derived, all bugs fixed** |
-| `camb/equations_car.f90` | CAMB Fortran patch for CAR sound speed |
-| `class/perturbations_car.c` | CLASS C patch for CAR sound speed |
-| `likelihoods/` | Likelihood modules for DESI, DES, HSC, KiDS, Planck |
-| `chains/` | PolyChord nested sampling configuration |
-| `figures/` | Scripts to reproduce all paper figures |
-| `data/download_data.sh` | Script to download real survey data |
-| `docker/Dockerfile` | Container for one-command reproducibility |
-| `CHANGELOG.md` | Full history of all parameter and code changes |
-
----
-
-### Important Notes for Independent Verification
-
-**Real data required for valid Bayesian evidence:**
-Without files in `data/`, likelihood modules use mock data. The 44:1 Bayesian
-odds figure in Paper 16 requires real DESI-DR2, DES-Y6, HSC-Y3, and KiDS-DR5
-data vectors — download with `data/download_data.sh`.
-
-**r_d from simple integral vs CAMB:**
-The Python integral in `sct_core.py` gives r_d ≈ 158 Mpc. The Paper 17 v4.8
-derived value of 146.8 ± 5 Mpc comes from the full CAMB Boltzmann solver with
-the CAR patch applied. The difference comes from tight-coupling and
-diffusion-damping corrections in CAMB's full hierarchy.
-
----
-
-### License
-
-GPL-3.0 | Contact: DR JM NIPOK via GitHub Issues
+```bibtex
+@misc{nipok2026sct,
+  author       = {{DR JM NIPOK}},
+  title        = {SCT Cosmology Series (Papers 1--46) Computational Framework},
+  year         = {2026},
+  publisher    = {GitHub},
+  howpublished = {\url{https://github.com/DR-JM-NIPOK/sct-collaboration}},
+  doi          = {10.13140/RG.2.2.10321.29288}
+}
+```

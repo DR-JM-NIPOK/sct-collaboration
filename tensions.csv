@@ -4,7 +4,7 @@ T002,Cosmological,S8 tension (CMB vs weak lensing),2.5-3.0σ,Unresolved,Resolved
 T003,Cosmological,CMB lensing A_lens > 1,2.3σ,Anomaly,Resolved (SCT derives 1.19),Planck PR3 2018
 T004,Cosmological,w0-wa departure from -1,3.1σ,Tension,Resolved (SCT derives w0=-0.90),DESI DR2 2026
 T005,Cosmological,Cosmic dipole kinematic vs number-count,4.9σ,Anomaly,Directionally explained (frame-tree),Secrest et al. 2022
-T006,Cosmological,BAO r_d Planck vs DESI,2.3σ,Tension,Resolved (SCT 149.2 Mpc),DESI DR2 2026
+T006,Cosmological,BAO r_d Planck vs DESI,2.3σ,Tension,CAR predicts 161.4 Mpc — does NOT close (audit v4.8.1),DESI DR2 2026
 T007,Cosmological,Cosmic bulk flows >100 Mpc,3-5σ,Tension,"Resolved (J-inheritance, 2x ΛCDM)",Cosmicflows-4 2023
 T008,Galaxy,Satellite plane (VPOS Milky Way),~5σ,Catastrophic,Resolved (J=mu b×v inheritance),Pawlowski et al. 2012
 T009,Galaxy,Satellite plane (GPoA Andromeda),~4σ,Catastrophic,Resolved,Ibata et al. 2013
