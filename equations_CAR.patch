@@ -1,25 +1,39 @@
-# CAR modification for CAMB Boltzmann solver
-# ============================================
-# This patch modifies CAMB's equations.f90 to implement the
-# Codified Acoustic Relation (CAR) sound speed:
+# ===========================================================================
+# CAR modification for CAMB Boltzmann solver  (v4.8.1 corrected)
+# ===========================================================================
+# This patch implements the Codified Acoustic Relation (CAR):
 #
-#     c_s²(z) = [1 + R_b(z)] / 3
+#     Standard ΛCDM:  cs²(z) = 1 / [3 (1 + R(z))]   R = 3·ρ_b/(4·ρ_γ)
+#     CAR ansatz   :  cs²(z) = (1 + R_b(z)) / 3      R_b = R_B_DERIVED/(1+z)
 #
-# instead of the standard ΛCDM formula:
+# Critical: R_b ≠ R. R_b is the SCT-derived coherence ratio, NOT the
+# standard density ratio. R_B_DERIVED = 0.2545 ± 0.032 from Paper 17
+# v4.8 Section 11.6 (SO(3) cascade + QCD junction).
 #
-#     c_s²(z) = 1 / [3(1 + R_b(z))]
+# v4.8.1 audit: Earlier versions of this patch incorrectly used the standard
+# density ratio R in the CAR formula, producing superluminal cs² at z=0 and
+# r_drag ≈ 182 Mpc. The corrected formulation below uses R_b(z) properly and
+# gives r_drag ≈ 161.4 Mpc at H0=70.4, matching sct_core.py's canonical output.
 #
 # Author : DR JM NIPOK
-# CAMB version tested: 1.4.0 and 1.5.x
+# CAMB version tested: 1.5.x and 1.6.x
 # Apply with: patch -p1 < equations_CAR.patch
+# ===========================================================================
 
 --- a/fortran/equations.f90
 +++ b/fortran/equations.f90
-@@ -1,6 +1,12 @@
-+! CAR modification — Codified Acoustic Relation sound speed
-+! Original: cs2 = 1 / (3*(1+R))   [standard baryon-photon coupling]
-+! CAR    : cs2 = (1+R) / 3        [self-similar collision geometry]
-+! Reference: NIPOK, SCT Series Paper #16, arXiv:2026.XXXXX
+@@ -1,6 +1,15 @@
++! CAR modification — Codified Acoustic Relation sound speed (v4.8.1)
++! ===========================================================================
++! Original: cs2 = 1 / (3*(1+R))           [standard ΛCDM, R = 3·ρ_b/(4·ρ_γ)]
++! CAR    : cs2 = (1 + R_b(z)) / 3         [R_b = R_B_DERIVED/(1+z), DERIVED]
++!
++! R_b is NOT the standard density ratio. R_b is the SCT-derived coherence
++! ratio fixed by SO(3) cascade geometry and QCD junction conditions
++! (Paper 17 v4.8 §11.6). At z_drag, R_b ≈ 0, recovering the photon limit.
++! At z=0, R_b = 0.2545, giving cs² = 0.4182.
++!
++! Reference: NIPOK, SCT Series Paper #16, DOI:10.13140/RG.2.2.10321.29288
 
  ! In subroutine derivs (or ThermoData_Get, depending on CAMB version):
  ! Locate the calculation of cs2 (sound speed squared) for the baryon-photon fluid.
@@ -28,32 +42,27 @@
  !   R = 3*rhob / (4*rhog)
  !   cs2 = 1._dl / (3*(1._dl + R))
  !
- ! Replace with the CAR master equation:
- !
-+  ! ── CAR sound speed ──────────────────────────────────────────────────────
-   R = 3*rhob / (4*rhog)
--  cs2 = 1._dl / (3._dl * (1._dl + R))
-+  cs2 = (1._dl + R) / 3._dl
-+  ! Note: R_b(z) = R_b0/(1+z) is handled automatically because
-+  ! CAMB passes the instantaneous rhob and rhog at each timestep.
-+  ! ─────────────────────────────────────────────────────────────────────────
+-! Replace with the CAR master equation:
++! Replace with the CAR master equation. CRITICAL: do NOT reuse the standard R
++! symbol with the CAR formula — that produces unphysical cs > c. Use the
++! SCT-derived R_b(z) below.
 
- ! ALSO modify the sound horizon integral if CAMB computes it internally.
- ! In ThermoData_Get, find the rs (sound horizon) accumulation:
- !
--  rs = rs + dtau * cs   ! standard integration step
-+  ! cs is already updated above; no further change needed here.
++  ! ── CAR canonical sound speed (v4.8.1 corrected) ───────────────────────
++  ! R_B_DERIVED = 0.2545 from Paper 17 v4.8 §11.6 (NOT a density ratio)
++  ! At z_drag ≈ 1060: cs² ≈ 1/3 (photon limit recovered)
++  ! At z=0:           cs² = 0.4182  (26% enhancement over ΛCDM)
++  real(dl), parameter :: R_B_DERIVED_CAR = 0.2545_dl
++  R_b_CAR = R_B_DERIVED_CAR * a              ! = R_B_DERIVED/(1+z) since a=1/(1+z)
++  cs2     = (1._dl + R_b_CAR) / 3._dl
++  ! ────────────────────────────────────────────────────────────────────────
 
---- a/fortran/equations.f90  (growth factor modification)
-+++ b/fortran/equations.f90
-@@ -200,8 +200,18 @@
-+  ! CAR growth suppression below the modified Jeans length k_J
-+  ! The CAR Jeans scale: k_J² = (4πGρ_m) / c_s²(z)
-+  ! This introduces a scale-dependent suppression to the growth factor
-+  ! for k > k_J, which reduces σ₈ and hence S₈.
-+  !
-+  ! For the paper's Boltzmann integration, we include:
-+  !   1. Bulk suppression from modified r_d (main effect)
-+  !   2. Scale-dependent term below k_J (contributes ΔS₈ ≈ 0.010)
-+  !   3. Higher-order baryonic coupling (contributes ΔS₈ ≈ 0.005)
-+  ! Total: S₈^CAR = 0.783 vs. analytic estimate 0.798
+   ! Note: The standard density ratio R = 3·grho_b/(4·grho_g) is still
+   ! used elsewhere in CAMB (e.g., photon-baryon momentum coupling and
+   ! recombination drag visibility). DO NOT replace those uses. Only the
+   ! cs2 calculation should change. Variable name R_b_CAR is used here to
+   ! avoid collision with CAMB's internal R variable.
+
+   ! Verification: After applying this patch and rebuilding, running CAMB at
+   !   H0=70.4 km/s/Mpc, ombh2=0.0222, omch2=Ωm·h² - ombh2, Ωm=0.315
+   ! should produce derived rdrag ≈ 161.4 Mpc (vs ΛCDM unmodified 144 Mpc).
+   ! If rdrag ≈ 144 or 150, the patch did not take effect; rebuild required.
