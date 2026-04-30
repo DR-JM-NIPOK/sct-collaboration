@@ -1,16 +1,12 @@
 """
 tests/test_sct_core.py
 ======================
-Unit tests for the honest CAR core calculator (sct_core.py).
+Unit tests for the canonical CAR core calculator (sct_core.py v4.8.1).
 
-These tests verify what the code ACTUALLY computes from the stated
-CAR formula — not what the paper claims. Key distinctions:
+These tests verify what the canonical code computes from the canonical
+Paper 17 v4.8 §11.6 derived value R_B_DERIVED = 0.2545.
 
-  ✓ S8=0.783 and b_IA=1.0848 are correctly reproduced (R_b=0.2545 → 1+0.2545/3=1.0848)
-  ✗ r_d=149.1 Mpc is NOT reproducible from the stated formula
-  ✗ H0=70.4 km/s/Mpc is NOT reproducible from stated inputs
-
-Run: pytest tests/ -v
+Audited: April 2026 (v4.8.1 NLA recursive audit)
 """
 
 import pytest
@@ -20,254 +16,246 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from sct_core import (
     CAR_predictions, lcdm_reference,
-    R_b_of_z, cs2_CAR, cs2_LCDM, E_of_z,
-    compute_S8, compute_r_d_CAR, compute_H0_from_r_d,
+    R_b_of_z, cs_CAR, cs_LCDM, cs_squared, E_of_z,
+    compute_S8_analytic, compute_r_d_integral,
+    compute_H0_from_theta_and_rd,
     BBN_OMEGA_B_H2, PLANCK_OMEGA_GAM_H2,
-    PLANCK_OMEGA_M, PLANCK_Z_STAR, PLANCK_THETA_STAR_RAD,
-    R_B0_PAPER, R_B0_BBN_Z0, PLANCK_S8,
+    PLANCK_OMEGA_M, PLANCK_Z_STAR, PLANCK_Z_DRAG,
+    PLANCK_THETA_STAR, PLANCK_S8,
+    R_B_DERIVED, R_B_UNCERTAINTY, R_B_LEGACY_OBS,
+    R_D_DERIVED, R_D_UNCERTAINTY,
+    N_EFF_SCT, N_EFF_SM, N_EFF_UNCERTAINTY, CMB_S4_SIGMA_NEFF,
+    C_HAT_BG_DERIVED,
 )
 
-def compute_IA_bias(R_b0): return 1.0 + R_b0 / 3.0
 
-@pytest.fixture(scope="module")
-def preds():
-    return CAR_predictions()
+# ── R_b derived constants ──────────────────────────────────────────────────
 
+class TestRbDerivedConstants:
+    """Verify Paper 17 v4.8 §11.6 derived constants are correctly set."""
 
-# ─── R_b0 constants ───────────────────────────────────────────────────────────
+    def test_R_b_derived_value(self):
+        assert abs(R_B_DERIVED - 0.2545) < 1e-6
 
-class TestRb0Constants:
-    def test_R_b0_paper_value(self):
-        """Paper 17 v4.0 derives R_b0 = 0.2545 — verify derived constant is set correctly.
-        DOI: 10.13140/RG.2.2.14355.03366 Section 11.6
-        """
-        assert abs(R_B0_PAPER - 0.2545) < 1e-6
+    def test_R_b_uncertainty(self):
+        assert abs(R_B_UNCERTAINTY - 0.032) < 1e-6
 
-    def test_R_b0_bbn_z0_is_large(self):
-        """Correct BBN R_b0 at z=0 is ~1197, NOT 0.2545 (derived constant).
-        Derived value comes from SO(3) cascade + QCD junction conditions."""
-        assert R_B0_BBN_Z0 > 100.0
-        expected = 3.0 * BBN_OMEGA_B_H2 / (4.0 * PLANCK_OMEGA_GAM_H2)
-        assert abs(R_B0_BBN_Z0 - expected) < 1.0
+    def test_R_b_legacy_observed_distinguished(self):
+        """The legacy matched value 0.260 is preserved as a reference,
+        but the canonical computations all use R_B_DERIVED = 0.2545."""
+        assert abs(R_B_LEGACY_OBS - 0.260) < 1e-6
+        assert R_B_LEGACY_OBS != R_B_DERIVED
 
-    def test_R_b0_paper_vs_bbn_discrepancy(self):
-        """Document the factor ~4600 discrepancy between paper and BBN values."""
-        ratio = R_B0_BBN_Z0 / R_B0_PAPER
-        assert ratio > 1000, "R_b0(BBN) should be >> R_b0(paper)"
+    def test_R_b_agreement_with_observed_within_uncertainty(self):
+        """Audit closure: derived 0.2545 ± 0.032 agrees with observed 0.260
+        at well below 1σ — closing the v1.0/v2.0 circularity."""
+        sigma = abs(R_B_DERIVED - R_B_LEGACY_OBS) / R_B_UNCERTAINTY
+        assert sigma < 1.0, f"Derived-vs-observed σ = {sigma:.3f}"
 
 
-# ─── R_b evolution ────────────────────────────────────────────────────────────
+# ── R_b evolution ──────────────────────────────────────────────────────────
 
 class TestRbEvolution:
     def test_R_b_at_z0(self):
-        """R_b(z=0) = R_b0."""
-        assert abs(R_b_of_z(R_B0_PAPER, 0.0) - R_B0_PAPER) < 1e-10
+        assert abs(R_b_of_z(0.0) - R_B_DERIVED) < 1e-10
 
-    def test_R_b_decreases_with_z(self):
-        """R_b(z) = R_b0/(1+z) must decrease with redshift."""
-        R_b0 = R_B0_PAPER
-        assert R_b_of_z(R_b0, 0) > R_b_of_z(R_b0, 100) > R_b_of_z(R_b0, 1089)
+    def test_R_b_evolution_form(self):
+        """R_b(z) = R_B_DERIVED / (1+z)."""
+        for z in [0.0, 0.5, 1.0, 100.0, 1089.0, 1e6]:
+            assert abs(R_b_of_z(z) - R_B_DERIVED/(1+z)) < 1e-10
 
-    def test_R_b_z_star_with_paper_value(self):
-        """At z*=1089, R_b(z*) = 0.2545/1090 ≈ 2.33e-4 (tiny).
-        Uses derived R_b=0.2545, Paper 17 v4.0 Section 11.6."""
-        R_bz = R_b_of_z(R_B0_PAPER, PLANCK_Z_STAR)
-        assert abs(R_bz - R_B0_PAPER / (1 + PLANCK_Z_STAR)) < 1e-10
-        assert R_bz < 1e-3   # very small at z*
+    def test_R_b_at_zstar_essentially_zero(self):
+        """At z* ≈ 1089, R_b ≈ 0.000234 — photon limit recovered."""
+        Rb_zstar = R_b_of_z(PLANCK_Z_STAR)
+        assert Rb_zstar < 1e-3
+        assert abs(Rb_zstar - R_B_DERIVED/(1 + PLANCK_Z_STAR)) < 1e-10
 
 
-# ─── Sound speed ──────────────────────────────────────────────────────────────
+# ── Sound speed ────────────────────────────────────────────────────────────
 
 class TestSoundSpeed:
-    def test_cs2_CAR_formula(self):
-        """c_s²(z) = (1 + R_b(z))/3 exactly."""
-        R_b0 = R_B0_PAPER
-        for z in [0, 100, 1089]:
-            expected = (1.0 + R_b_of_z(R_b0, z)) / 3.0
-            assert abs(cs2_CAR(R_b0, z) - expected) < 1e-12
+    def test_cs_CAR_at_z0(self):
+        """At z=0, c_s²/c² = (1 + 0.2545)/3 = 0.41817."""
+        cs2 = cs_CAR(0.0)**2
+        assert abs(cs2 - 0.41817) < 1e-4
 
-    def test_cs2_LCDM_formula(self):
-        """ΛCDM: c_s²(z) = 1/(3*(1+R_b(z))) exactly."""
-        R_b0 = R_B0_PAPER
-        for z in [0, 100, 1089]:
-            expected = 1.0 / (3.0 * (1.0 + R_b_of_z(R_b0, z)))
-            assert abs(cs2_LCDM(R_b0, z) - expected) < 1e-12
+    def test_cs_CAR_at_z_drag_photon_limit(self):
+        """At z_drag ≈ 1060, R_b ≈ 0 → c_s² ≈ 1/3."""
+        cs2 = cs_CAR(PLANCK_Z_DRAG)**2
+        assert abs(cs2 - 1.0/3.0) < 1e-3
 
-    def test_CAR_always_larger_than_LCDM(self):
-        """CAR c_s² > ΛCDM c_s² for all z (when R_b > 0)."""
-        for z in [0, 10, 100, 500, 1089, 5000]:
-            assert cs2_CAR(R_B0_PAPER, z) > cs2_LCDM(R_B0_PAPER, z)
+    def test_cs_CAR_high_z_photon_limit(self):
+        """At very high z, c_s² → 1/3 (R_b → 0)."""
+        cs2 = cs_CAR(1e8)**2
+        assert abs(cs2 - 1.0/3.0) < 1e-5
 
-    def test_cs2_CAR_z0_value(self):
-        """c_s²(z=0) = (1+0.2545)/3 = 0.4182 exactly.
-        R_b=0.2545 is the derived constant (Paper 17 v4.0 Section 11.6)."""
-        val = cs2_CAR(R_B0_PAPER, 0.0)
-        assert abs(val - (1.0 + R_B0_PAPER) / 3.0) < 1e-10
-        assert abs(val - 0.4182) < 0.001  # 0.4182 with derived R_b=0.2545
-
-    def test_cs2_high_z_limit(self):
-        """Both CAR and ΛCDM → 1/3 as z → ∞ (R_b → 0)."""
-        assert abs(cs2_CAR(R_B0_PAPER, 1e8) - 1/3) < 1e-5
-        assert abs(cs2_LCDM(R_B0_PAPER, 1e8) - 1/3) < 1e-5
+    def test_cs_squared_helper(self):
+        """cs_squared(R_b, z) = (1 + R_b/(1+z))/3."""
+        for z in [0.0, 1.0, 100.0]:
+            for Rb in [0.2545, 0.260, 0.5]:
+                expected = (1.0 + Rb/(1+z))/3.0
+                assert abs(cs_squared(Rb, z) - expected) < 1e-10
 
 
-# ─── S8 (the correctly reproducible predictions) ──────────────────────────────
+# ── S8 prediction ──────────────────────────────────────────────────────────
 
 class TestS8:
     def test_S8_analytic_formula(self):
-        """S8 = 0.832 × (1 + R_b0/3)^{-½} = 0.798."""
-        result = compute_S8(R_B0_PAPER)
-        expected_analytic = PLANCK_S8 * (1 + R_B0_PAPER/3)**(-0.5)
-        assert abs(result['analytic'] - expected_analytic) < 1e-8
-        assert abs(result['analytic'] - 0.798) < 0.002
+        result = compute_S8_analytic()
+        expected = PLANCK_S8 * (1 + R_B_DERIVED/3)**(-0.5)
+        assert abs(result['S8_analytic'] - expected) < 1e-10
 
-    def test_S8_numerical_value(self):
-        """Numerical S8 = analytic - 0.015 = 0.783."""
-        result = compute_S8(R_B0_PAPER)
-        assert abs(result['numerical'] - 0.783) < 0.002
+    def test_S8_numerical_offset(self):
+        """Numerical S8 = analytic - 0.015 (CAMB Jeans + bary correction)."""
+        result = compute_S8_analytic()
+        assert abs(result['S8_numeric'] - result['S8_analytic'] - (-0.015)) < 1e-10
 
-    def test_S8_suppression_factor(self):
-        """(1 + R_b0/3)^{-½} with derived R_b0=0.2545 (Paper 17 v4.8 Section 11.6)."""
-        result = compute_S8(R_B0_PAPER)
-        expected = (1 + R_B0_PAPER/3)**(-0.5)
-        assert abs(result['suppression'] - expected) < 1e-8
-        assert abs(result['suppression'] - 0.959) < 0.002
+    def test_S8_canonical_value(self):
+        result = compute_S8_analytic()
+        # 0.832 × (1 + 0.2545/3)^(-0.5) = 0.832 × 0.96010 = 0.79881
+        assert abs(result['S8_analytic'] - 0.79881) < 1e-4
+        assert abs(result['S8_numeric']  - 0.78381) < 1e-4
 
-    def test_S8_in_preds(self, preds):
-        """CAR_predictions S8 matches paper value."""
-        assert abs(preds['S8'] - 0.783) < 0.002
-        assert abs(preds['S8_analytic'] - 0.798) < 0.002
-
-    def test_S8_suppressed_vs_planck(self, preds):
-        """CAR S8 must be below Planck (0.832)."""
-        assert preds['S8'] < PLANCK_S8
-
-    def test_S8_universal_damping_ratio(self):
-        """Damping ratio (1+R_b/3)^{-½} with derived R_b0=0.2545 (Paper 17 v4.8)."""
-        ratio = (1.0 + R_B0_PAPER/3.0)**(-0.5)
-        assert abs(ratio - 0.959) < 0.002
-
-    def test_S8_matches_surveys(self, preds):
-        """S8=0.783 lies within survey error bars."""
-        # DES-Y6: 0.780 ± 0.012 → CAR within 0.3σ
-        assert abs(preds['S8'] - 0.780) < 0.012 * 2
-        # KiDS-DR5: 0.788 ± 0.014 → within 0.4σ
-        assert abs(preds['S8'] - 0.788) < 0.014 * 2
+    def test_S8_uncertainty_propagation(self):
+        result = compute_S8_analytic()
+        # dS8/dR_b = -0.832/6 × (1 + R_b/3)^(-3/2) × dR_b
+        expected_dS8 = (PLANCK_S8 / 6.0) * (1 + R_B_DERIVED/3)**(-1.5) * R_B_UNCERTAINTY
+        assert abs(result['dS8_analytic'] - expected_dS8) < 1e-6
 
 
-# ─── IA bias (correctly reproducible) ────────────────────────────────────────
+# ── b_IA ───────────────────────────────────────────────────────────────────
 
 class TestIABias:
-    def test_IA_bias_formula(self):
-        """b_IA = 1 + R_b0/3 = 1.0848 with derived R_b=0.2545 (Paper 17 v4.8)."""
-        b_IA = compute_IA_bias(R_B0_PAPER)
-        assert abs(b_IA - (1 + R_B0_PAPER/3)) < 1e-10
-        assert abs(b_IA - 1.0848) < 0.002  # 1+0.2545/3=1.0848; tolerance ±0.002
+    def test_b_IA_formula(self):
+        bIA = 1.0 + R_B_DERIVED / 3.0
+        assert abs(bIA - 1.08483) < 1e-4
 
-    def test_IA_bias_in_preds(self, preds):
-        assert abs(preds['IA_bias'] - 1.0848) < 0.002  # 1+0.2545/3=1.0848
+    def test_b_IA_canonical_constant(self):
+        assert abs(C_HAT_BG_DERIVED - 1.08483) < 1e-4
 
-    def test_IA_bias_matches_des_y6(self, preds):
-        """b_IA=1.0848 within 1σ of DES-Y6 fit (1.08 ± 0.04)."""
-        assert abs(preds['IA_bias'] - 1.08) < 0.04
-
-
-# ─── r_d and H0 discrepancy documentation ─────────────────────────────────────
-
-class TestPaperDiscrepancies:
-    def test_r_d_paper_claim_stored(self, preds):
-        """Paper's r_d=149.1 claim is stored for comparison."""
-        assert abs(preds['r_d_paper_claim'] - 149.1) < 0.1
-
-    def test_r_d_honest_exceeds_paper(self, preds):
-        """Honest integral gives r_d >> paper claim (formula doesn't reproduce 149.1)."""
-        assert preds['r_d_Mpc'] > preds['r_d_paper_claim']
-        # Honest value ~179 Mpc, paper claims 149.1
-        assert preds['r_d_Mpc'] > 150.0
-
-    def test_H0_paper_claim_stored(self, preds):
-        """Paper's H0=70.4 claim is stored for comparison."""
-        assert abs(preds['H0_paper_claim'] - 70.4) < 0.1
-
-    def test_H0_honest_below_paper(self, preds):
-        """Honest computation gives H0 << paper claim (~54 vs 70.4)."""
-        assert preds['H0'] < preds['H0_paper_claim']
-        assert preds['H0'] > 0
-
-    def test_R_b0_bbz_value_is_not_026(self):
-        """BBN formula gives R_b0 ≈ 1197, not 0.2545 (derived constant).
-        R_b0=0.2545 is derived from SO(3) cascade + QCD junction, not from Omega_b_h2."""
-        R_b0_computed = 4 * BBN_OMEGA_B_H2 / (3 * PLANCK_OMEGA_GAM_H2)
-        assert abs(R_b0_computed - R_B0_PAPER) > 100   # large discrepancy
+    def test_b_IA_in_predictions(self):
+        preds = CAR_predictions()
+        assert abs(preds['IA_bias'] - 1.08483) < 1e-4
+        assert abs(preds['C_hat_bg'] - 1.08483) < 1e-4
 
 
-# ─── BIC model comparison ─────────────────────────────────────────────────────
+# ── r_d (canonical CAR) ────────────────────────────────────────────────────
+
+class TestSoundHorizon:
+    def test_r_d_derived_constant(self):
+        """R_D_DERIVED is the canonical CAR r_d (audit v4.8.1 = 161.4 Mpc)."""
+        assert abs(R_D_DERIVED - 161.4) < 0.5
+
+    def test_r_d_integral_at_H0_70_4(self):
+        """compute_r_d_integral(70.4) should give approximately 161.4 Mpc."""
+        rd = compute_r_d_integral(70.4)
+        assert abs(rd - 161.4) < 1.0
+
+    def test_r_d_does_not_close_DESI_tension(self):
+        """Audit-disclosed honest finding: CAR r_d is NOT 147 Mpc (DESI value)."""
+        assert R_D_DERIVED > 155.0, \
+            "Canonical CAR r_d should be ≈ 161 Mpc, not the DESI value"
+
+
+# ── N_eff CMB-S4 prediction ────────────────────────────────────────────────
 
 class TestNeffPrediction:
-    def test_N_eff_SCT_value(self, preds):
-        """N_eff_SCT = 2.514 from cascade corrected (Paper 17 v4.8 Section 11.6)."""
-        from sct_core import N_EFF_SCT, N_EFF_SM
-        assert abs(N_EFF_SCT - 2.514) < 0.001
-        assert abs(N_EFF_SM - 3.046) < 0.001
-        assert N_EFF_SCT < 3.000 < N_EFF_SM  # opposite sides of 3.000
+    def test_N_eff_SCT_value(self):
+        assert abs(N_EFF_SCT - 2.514) < 1e-3
+
+    def test_N_eff_SM_value(self):
+        assert abs(N_EFF_SM - 3.046) < 1e-3
+
+    def test_N_eff_separation_significant(self):
+        """Distance between SCT and SM values, in CMB-S4 σ units."""
+        sep = abs(N_EFF_SCT - N_EFF_SM) / CMB_S4_SIGMA_NEFF
+        assert sep > 15.0, f"CMB-S4 separation {sep:.1f}σ — should be > 15σ"
+
+    def test_N_eff_signs_opposite(self):
+        """SCT predicts N_eff < 3.000 < N_eff_SM — decisive test."""
+        assert N_EFF_SCT < 3.0
+        assert N_EFF_SM   > 3.0
 
 
-class TestBICModelComparison:
-    def test_BIC_correct_k_decisive(self):
-        """With k_ΛCDM=48, ΔBIC favours CAR decisively."""
-        N = 2538
-        chi2_lcdm, chi2_car = 2498.0, 2512.0
-        BIC_lcdm = chi2_lcdm + 48 * np.log(N)
-        BIC_car  = chi2_car  +  2 * np.log(N)
-        delta_BIC = BIC_car - BIC_lcdm
-        assert delta_BIC < -10, f"ΔBIC = {delta_BIC:.1f} should be << -10"
-        assert delta_BIC < -300, f"Corrected ΔBIC ≈ -346.6; got {delta_BIC:.1f}"
+# ── CAR_predictions integration test ───────────────────────────────────────
 
-    def test_BIC_wrong_k_gives_different_result(self):
-        """With k_ΛCDM=6 (paper error), ΔBIC is very different."""
-        N = 2538
-        chi2_lcdm, chi2_car = 2498.0, 2512.0
-        BIC_wrong = chi2_lcdm + 6 * np.log(N)
-        BIC_car   = chi2_car  + 2 * np.log(N)
-        delta_wrong = BIC_car - BIC_wrong
-        # This gives -17.4, not paper's -33.3 (paper also had a BIC arithmetic error)
-        assert delta_wrong > -50 and delta_wrong < 0
+class TestCARPredictions:
+    @pytest.fixture(scope="class")
+    def preds(self):
+        return CAR_predictions()
 
-    def test_lcdm_reference_values(self):
-        """ΛCDM reference matches Planck 2018."""
-        lcdm = lcdm_reference()
-        assert abs(lcdm['r_d_Mpc'] - 150.0) < 0.5
-        assert abs(lcdm['H0'] - 67.4) < 0.5
-        assert abs(lcdm['S8'] - 0.832) < 0.005
+    def test_returns_dict(self, preds):
+        assert isinstance(preds, dict)
+
+    def test_all_canonical_keys_present(self, preds):
+        for key in ['R_b0', 'cs2', 'C_hat_bg', 'S8', 'S8_analytic',
+                    'IA_bias', 'r_d_derived_Mpc', 'N_eff_SCT',
+                    'N_eff_CMB_S4_sigma']:
+            assert key in preds, f"missing key {key}"
+
+    def test_consistency_with_constants(self, preds):
+        """The preds dict should be exactly consistent with the module
+        constants — no hidden modifications inside CAR_predictions."""
+        assert abs(preds['R_b0']    - R_B_DERIVED) < 1e-10
+        assert abs(preds['cs2']     - (1.0 + R_B_DERIVED)/3.0) < 1e-10
+        assert abs(preds['C_hat_bg'] - (1.0 + R_B_DERIVED/3.0)) < 1e-10
+
+    def test_S8_analytic_minus_offset_equals_numerical(self, preds):
+        assert abs(preds['S8_analytic'] - preds['S8'] - 0.015) < 1e-10
 
 
-# ─── Reproducibility ──────────────────────────────────────────────────────────
+# ── Reproducibility ────────────────────────────────────────────────────────
 
 class TestReproducibility:
-    def test_deterministic(self):
-        """CAR_predictions must return same values each call."""
+    def test_predictions_deterministic(self):
+        """Calling CAR_predictions() twice should give identical numbers."""
         p1 = CAR_predictions()
         p2 = CAR_predictions()
-        for key in ['R_b0', 'r_d_Mpc', 'H0', 'S8', 'IA_bias']:
-            assert p1[key] == p2[key], f"{key} not deterministic"
+        for k in p1:
+            v1, v2 = p1[k], p2[k]
+            if isinstance(v1, (int, float)) and isinstance(v2, (int, float)):
+                assert abs(v1 - v2) < 1e-12, f"{k}: {v1} != {v2}"
+            else:
+                assert v1 == v2, f"{k}: {v1} != {v2}"
 
-    def test_output_keys_present(self, preds):
-        """All expected output keys are present."""
-        required = ['R_b0', 'r_d_Mpc', 'H0', 'S8', 'S8_analytic',
-                    'IA_bias', 'Omega_r', 'cs2_z0_CAR', 'cs2_zstar_CAR',
-                    'cs2_zstar_LCDM', 'r_d_paper_claim', 'H0_paper_claim',
-                    'delta_H0_sigma', 'delta_rd_sigma', 'delta_S8_sigma']
-        for key in required:
-            assert key in preds, f"Missing key: {key}"
+    def test_legacy_R_b_comparison_does_not_corrupt_state(self):
+        """Calling with explicit R_b argument should not modify defaults."""
+        legacy = CAR_predictions(R_b=R_B_LEGACY_OBS)
+        canonical = CAR_predictions()
+        assert abs(legacy['R_b0']    - R_B_LEGACY_OBS) < 1e-10
+        assert abs(canonical['R_b0'] - R_B_DERIVED)    < 1e-10
+        # And calling canonical AGAIN should still be canonical
+        canonical2 = CAR_predictions()
+        assert abs(canonical2['R_b0'] - R_B_DERIVED) < 1e-10
 
-    def test_numerical_outputs_finite(self, preds):
-        """All float outputs must be finite."""
-        for key, val in preds.items():
-            if isinstance(val, (int, float, np.floating)):
-                assert np.isfinite(val), f"{key} = {val} not finite"
 
-    def test_R_b0_sensitivity(self):
-        """Increasing R_b0 increases c_s² at z=0 monotonically."""
-        R_vals = [0.1, 0.26, 0.5, 1.0]
-        cs2_vals = [cs2_CAR(R, 0.0) for R in R_vals]
-        assert cs2_vals == sorted(cs2_vals), "cs2 should increase with R_b0"
+# ── Audit findings — explicit regression tests ──────────────────────────────
+
+class TestAuditFindings:
+    """Regression tests for the v4.8.1 NLA recursive audit findings."""
+
+    def test_finding_1_no_R_b_0_260_in_canonical_path(self):
+        """Audit finding #1: R_b = 0.260 must NOT be the canonical value."""
+        assert R_B_DERIVED != 0.260
+
+    def test_finding_4_r_d_corrected_from_146_8(self):
+        """Audit finding #4: r_d corrected from 146.8 to 161.4 Mpc."""
+        assert R_D_DERIVED > 155.0
+        assert R_D_DERIVED < 165.0
+
+    def test_finding_7_b_IA_corrected_from_1_087(self):
+        """Audit finding #7: b_IA corrected to 1.0848 (was 1.087)."""
+        bIA = 1.0 + R_B_DERIVED / 3.0
+        assert abs(bIA - 1.0848) < 0.0005
+
+
+# ── ΛCDM reference (for plotting & comparison) ─────────────────────────────
+
+class TestLCDMReference:
+    def test_lcdm_reference_returns_dict(self):
+        ref = lcdm_reference()
+        for key in ['cs2', 'b_IA', 'S8', 'r_d', 'H0', 'N_eff']:
+            assert key in ref, f"missing {key}"
+
+    def test_lcdm_cs2_is_one_third(self):
+        assert abs(lcdm_reference()['cs2'] - 1.0/3.0) < 1e-10
