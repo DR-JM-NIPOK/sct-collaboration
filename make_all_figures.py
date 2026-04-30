@@ -59,7 +59,7 @@ def figure_2_residuals():
 def figure_3_s8_comparison():
     """Figure 3: S₈ comparison across surveys"""
     surveys = ['DES-Y6', 'HSC-Y3', 'KiDS-DR5', 'Planck', 'CAR']
-    s8_values = [0.780, 0.776, 0.815, 0.832, 0.783]
+    s8_values = [0.780, 0.776, 0.788, 0.832, 0.7838]   # v4.8.1: KiDS 0.815→0.788, S8 SCT 0.783→0.7838
     s8_errors = [0.012, 0.032, 0.016, 0.013, 0.015]
     colors = ['red', 'orange', 'green', 'blue', 'black']
     
