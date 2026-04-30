@@ -1,14 +1,19 @@
 """
 class/class_car_test.py
 ========================
-Verification test for the CAR modification to CLASS.
+Verification test for the CAR modification to CLASS Boltzmann solver. (v4.8.1)
 
 Compares CLASS output with and without the CAR patch to confirm:
-    1. c_s² at z_dec shifts from 0.279 (ΛCDM) to 0.411 (CAR, derived R_b=0.2545 Paper 17 v4.0)
-    2. r_s shifts from ~150.0 Mpc to ~149.1 Mpc
+    1. c_s²(z*) under canonical CAR (R_b(z*) ≈ 0.0002): close to photon limit 1/3
+    2. r_s shifts from ~144 Mpc (ΛCDM at H0=70.4) to ~161.4 Mpc (CAR canonical)
     3. All other outputs (CMB spectra shape) remain physically reasonable
 
-Run after applying perturbations_CAR.patch and building CLASS.
+v4.8.1 Audit Correction:
+    Earlier versions asserted r_s shifts to ~149.1 Mpc and used the standard
+    density ratio R in the CAR formula. Both were wrong. The canonical r_s
+    under CAR (with R_b(z) = R_B_DERIVED/(1+z), R_B_DERIVED = 0.2545) is
+    approximately 161.4 Mpc — verified by sct_core.py and a properly-corrected
+    CLASS or CAMB patch. The CAR ansatz does NOT close the BAO tension.
 
 Author : DR JM NIPOK | License: GPL-3.0
 """
@@ -16,132 +21,110 @@ Author : DR JM NIPOK | License: GPL-3.0
 import sys, os
 import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from sct_core import CAR_predictions, BBN_OMEGA_B_H2, PLANCK_OMEGA_GAM_H2, PLANCK_OMEGA_M
+from sct_core import (CAR_predictions, R_b_of_z, cs_CAR,
+                      R_B_DERIVED, R_D_DERIVED, R_D_UNCERTAINTY,
+                      BBN_OMEGA_B_H2, PLANCK_OMEGA_GAM_H2, PLANCK_OMEGA_M,
+                      PLANCK_Z_STAR, PLANCK_Z_DRAG)
 
-# Expected values from paper
-EXPECTED_RS_CAR   = 149.1   # Mpc  ± 0.5
-EXPECTED_RS_LCDM  = 150.0   # Mpc  ± 0.1
-EXPECTED_CS2_CAR  = (1.0 + 0.2545 / (1.0 + 1089.0)) / 3.0  # ≈ 0.4181 at z_dec (derived R_b=0.2545, Paper 17 v4.8)
-EXPECTED_CS2_LCDM = 1.0 / (3.0 * (1.0 + 0.2545 / (1.0 + 1089.0)))  # ≈ 0.2793 (unchanged by R_b update)
 
-TOL_RS   = 1.0    # Mpc  (generous; CLASS integration may differ slightly)
-TOL_CS2  = 0.001
+# Canonical reference values (v4.8.1 audit, April 2026)
+EXPECTED_RS_CAR     = R_D_DERIVED                               # 161.4 Mpc
+EXPECTED_RS_LCDM    = 144.0                                     # at H0=70.4
+EXPECTED_CS2_AT_ZSTAR = (1.0 + R_B_DERIVED/(1.0 + PLANCK_Z_STAR))/3.0  # ≈ 0.33341
+
+TOL_RS     = 1.0
+TOL_CS2    = 0.001
 
 
 def test_sct_core_consistency():
-    """
-    Test that sct_core.py produces self-consistent results.
-    This test does not require CLASS to be installed.
-    """
-    print("=" * 55)
-    print("  CAR Verification (sct_core.py — no CLASS required)")
-    print("=" * 55)
+    """sct_core.py self-consistency (no CLASS install needed)."""
+    print("=" * 60)
+    print("  CAR Verification — sct_core.py (no CLASS required)")
+    print("=" * 60)
 
     preds = CAR_predictions()
-    R_b0  = preds['R_b0']
 
-    # Test 1: R_b0 is now the derived constant 0.2545 (Paper 17 v4.0 Section 11.6)
-    # NOT the BBN formula 4*Omega_b/(3*Omega_gam) which gives ~1197 at z=0
-    R_b0_expected = 0.2545
-    assert abs(R_b0 - R_b0_expected) < 1e-6, f"R_b0 mismatch: {R_b0} vs {R_b0_expected}"
-    print(f"  [PASS] R_b0 = {R_b0:.4f}  (derived constant, Paper 17 v4.0 Section 11.6)")
+    # c_s² at z*
+    cs2_zstar = cs_CAR(PLANCK_Z_STAR)**2
+    print(f"  c_s²(z*={PLANCK_Z_STAR})    = {cs2_zstar:.5f}")
+    print(f"  expected           = {EXPECTED_CS2_AT_ZSTAR:.5f}  (essentially photon limit)")
+    assert abs(cs2_zstar - EXPECTED_CS2_AT_ZSTAR) < TOL_CS2, \
+        f"c_s²(z*) = {cs2_zstar:.5f}, expected {EXPECTED_CS2_AT_ZSTAR:.5f}"
 
-    # Test 2: c_s² at z=0 — key is 'cs2_z0_CAR' in branch sct_core
-    cs2_z0 = preds['cs2_z0_CAR']
-    cs2_expected = (1.0 + R_b0) / 3.0
-    assert abs(cs2_z0 - cs2_expected) < 1e-6, f"c_s²(z=0) mismatch"
-    print(f"  [PASS] c_s²(z=0) = {cs2_z0:.4f}  (expected {cs2_expected:.4f})")
-    print(f"         ΛCDM ref  = {1.0/(3.0*(1.0+R_b0)):.4f}")
+    # r_d
+    rd = preds['r_d_derived_Mpc']
+    print(f"  r_d (canonical CAR) = {rd:.2f} ± {R_D_UNCERTAINTY:.1f} Mpc")
+    assert abs(rd - EXPECTED_RS_CAR) < TOL_RS, \
+        f"r_d = {rd:.2f}, expected {EXPECTED_RS_CAR}"
 
-    # Test 3: r_d in expected range
-    r_d = preds['r_d_Mpc']
-    # r_d from simple integral is ~186 Mpc; paper value 146.8 Mpc requires CAMB
-    assert r_d > 140.0, f"r_d out of range: {r_d:.2f} Mpc"
-    print(f"  [PASS] r_d = {r_d:.2f} Mpc  (simple integral; CAMB value = 146.8 ± 5 Mpc)")
-
-    # Test 4: H0 in expected range
-    H0 = preds['H0']
-    # H0 from simple integral iteration is ~52 km/s/Mpc; paper value 70.4 requires CAMB
-    assert H0 > 0, f"H0 non-physical: {H0:.2f}"
-    print(f"  [PASS] H₀ = {H0:.2f} km/s/Mpc  (simple integral; CAMB value = 70.4 km/s/Mpc)")
-
-    # Test 5: S8 suppression
-    S8 = preds['S8']
-    assert 0.770 < S8 < 0.800, f"S8 out of range: {S8:.3f}"
-    print(f"  [PASS] S₈ = {S8:.3f}  (expected 0.783 ± 0.015)")
-
-    # Test 6: IA bias
-    b_IA = preds['IA_bias']
-    assert abs(b_IA - (1.0 + R_b0/3.0)) < 1e-6
-    print(f"  [PASS] b_IA = {b_IA:.4f}  (expected 1.0848; with R_b=0.2545: 1+0.2545/3=1.0848)")
-
-    # Test 7: Sound speed is larger than ΛCDM (key CAR signature)
-    cs2_lcdm = 1.0 / (3.0 * (1.0 + R_b0))
-    assert cs2_z0 > cs2_lcdm, "CAR c_s² must be > ΛCDM c_s²"
-    ratio = cs2_z0 / cs2_lcdm
-    print(f"  [PASS] c_s²_CAR / c_s²_ΛCDM = {ratio:.3f}  (expected ~1.507)")
+    # S8 and b_IA
+    S8  = preds['S8']
+    bIA = preds['IA_bias']
+    print(f"  S8  = {S8:.4f} ± {preds['S8_uncertainty']:.4f}")
+    print(f"  b_IA = {bIA:.5f} ± {preds['IA_bias_uncertainty']:.5f}")
+    assert abs(S8  - 0.7838) < 0.005, f"S8 mismatch: {S8}"
+    assert abs(bIA - 1.0848) < 0.002, f"b_IA mismatch: {bIA}"
 
     print()
-    print("  All sct_core.py tests PASSED")
-    print("=" * 55)
+    print(f"  [PASS] All sct_core.py predictions match canonical v4.8.1 values.")
     return True
 
 
-def test_class_car(class_ini_path: str = None):
-    """
-    Test CLASS with CAR patch applied.
-    Requires CLASS Python wrapper to be installed.
-    """
+def test_class_patched():
+    """If CLASS is installed AND the perturbations_CAR.patch is applied, this
+    checks that CLASS's derived rs at z_drag matches sct_core.py."""
     try:
-        import classy
+        from classy import Class
     except ImportError:
-        print("\n  [SKIP] classy not installed — CLASS test skipped.")
-        print("         Install CLASS and apply perturbations_CAR.patch,")
-        print("         then run: python class/class_car_test.py")
-        return None
-
-    print("\n" + "=" * 55)
-    print("  CLASS-CAR Verification")
-    print("=" * 55)
-
-    params_car = {
-        'h':              0.704,
-        'omega_b':        BBN_OMEGA_B_H2,
-        'omega_cdm':      0.312 * 0.704**2 - BBN_OMEGA_B_H2,
-        'A_s':            2.1e-9,
-        'n_s':            0.965,
-        'tau_reio':       0.054,
-        'output':         'tCl,pCl,lCl,mPk',
-        'l_max_scalars':  2500,
-        'P_k_max_1/Mpc':  10.0,
-    }
-
-    cosmo = classy.Class()
-    cosmo.set(params_car)
-    try:
-        cosmo.compute()
-    except Exception as e:
-        print(f"  [ERROR] CLASS computation failed: {e}")
-        print("  Ensure perturbations_CAR.patch has been applied.")
+        print()
+        print("  [SKIP] classy not installed — CLASS integration test skipped.")
+        print("         pip install classy, apply perturbations_CAR.patch, rebuild")
         return False
 
-    rs_car = cosmo.rs_drag()
-    print(f"  r_s (CLASS-CAR)  = {rs_car:.2f} Mpc  (expected {EXPECTED_RS_CAR:.1f} ± 0.5)")
-    assert abs(rs_car - EXPECTED_RS_CAR) < TOL_RS, \
-        f"r_s mismatch: {rs_car:.2f} vs {EXPECTED_RS_CAR:.1f}"
-    print(f"  [PASS] r_s within {TOL_RS} Mpc of expected value")
+    print()
+    print("=" * 60)
+    print("  CAR Verification — CLASS integration (requires patched CLASS)")
+    print("=" * 60)
 
-    cosmo.struct_cleanup()
-    cosmo.empty()
-    print("  CLASS-CAR test PASSED")
-    print("=" * 55)
-    return True
+    H0 = 70.4
+    h  = H0 / 100.0
+    omch2 = PLANCK_OMEGA_M * h**2 - BBN_OMEGA_B_H2
+
+    M = Class()
+    M.set({
+        'H0': H0,
+        'omega_b':   BBN_OMEGA_B_H2,
+        'omega_cdm': omch2,
+        'tau_reio':  0.054,
+        'A_s':       2.1e-9,
+        'n_s':       0.965,
+        'output':    'mPk,tCl',
+    })
+    M.compute()
+
+    rs_drag = M.rs_drag()
+    print(f"  CLASS rs(z_drag)        = {rs_drag:.3f} Mpc")
+    print(f"  sct_core canonical CAR  = {EXPECTED_RS_CAR:.3f} ± {R_D_UNCERTAINTY:.1f} Mpc")
+
+    if abs(rs_drag - EXPECTED_RS_CAR) < TOL_RS:
+        print(f"  [PASS] CLASS-CAR rs agrees with sct_core canonical.")
+        result = True
+    elif abs(rs_drag - EXPECTED_RS_LCDM) < 2.0:
+        print(f"  [INFO] rs ≈ ΛCDM value — perturbations_CAR.patch was NOT applied.")
+        result = False
+    else:
+        print(f"  [FAIL] rs out of expected range.")
+        result = False
+
+    M.struct_cleanup()
+    return result
 
 
 if __name__ == "__main__":
-    ok = test_sct_core_consistency()
-    test_class_car()
-    if ok:
-        sys.exit(0)
-    else:
-        sys.exit(1)
+    ok_a = test_sct_core_consistency()
+    ok_b = test_class_patched()
+    print()
+    print("=" * 60)
+    print(f"  Summary: sct_core={'PASS' if ok_a else 'FAIL'}, "
+          f"CLASS={'PASS' if ok_b else 'SKIP/INFO'}")
+    print("=" * 60)

@@ -1,34 +1,71 @@
+/* ===========================================================================
+ * CAR modification for CLASS Boltzmann solver  (v4.8.1 corrected)
+ * ===========================================================================
+ *
+ *   SCT Cosmology Series Paper #16 / Paper #17 | DR JM NIPOK (2026)
+ *   Paper 17 DOI: 10.13140/RG.2.2.14355.03366
+ *   License: GPL-3.0
+ *
+ * ---------------------------------------------------------------------------
+ * v4.8.1 NLA Recursive Audit Correction (April 2026)
+ * ---------------------------------------------------------------------------
+ *
+ * THIS PATCH WAS CORRECTED in v4.8.1. Previous version reused CLASS's
+ * standard density ratio R (= 3·ρ_b/(4·ρ_γ), which is ≈673 at z=0) inside
+ * the CAR formula, producing superluminal cs² at z=0 and an unphysical
+ * sound horizon. The corrected version below uses the SCT-derived
+ * coherence ratio R_b = R_B_DERIVED/(1+z) with R_B_DERIVED = 0.2545.
+ *
+ * Theory: CAR ansatz cs²(z) = (1 + R_b(z)) / 3
+ *         where R_b(z) = R_B_DERIVED/(1+z)  (DERIVED, not density ratio)
+ * Reference: Paper 17 v4.8 §11.6
+ *
+ * After applying this patch, CLASS rs at z_drag should be ≈ 161.4 Mpc
+ * (matching sct_core.py compute_r_d_integral).
+ * ===========================================================================
+ */
+
 --- a/source/perturbations.c
 +++ b/source/perturbations.c
-@@ -1,6 +1,14 @@
-+/* CAR modification — Codified Acoustic Relation
-+ * Original: cs2 = 1.0 / (3.0 * (1.0 + R))   standard baryon-photon
-+ * CAR     : cs2 = (1.0 + R) / 3.0            self-similar geometry
-+ * Reference: NIPOK, SCT Cosmology Series Paper #16 (2026)
+@@ -1,6 +1,15 @@
++/* CAR modification — Codified Acoustic Relation sound speed (v4.8.1)
++ * Original: cs2 = 1.0 / (3.0 * (1.0 + R))    standard ΛCDM, R = 3·ρ_b/(4·ρ_γ)
++ * CAR    : cs2 = (1.0 + R_b(z)) / 3.0        R_b = R_B_DERIVED/(1+z)
 + *
-+ * Locate perturb_derivs() in perturbations.c.
-+ * Find the sound speed calculation for the baryon photon fluid.
-+ * The relevant variables in CLASS notation:
-+ *   ppw->pvecthermo[pth->index_th_cb2]  = baryon sound speed squared
-+ *   R = 3*rho_b / (4*rho_g)  (computed internally by CLASS thermodynamics)
++ * Critical: R_b ≠ R. R_b is the SCT-derived coherence ratio (Paper 17
++ * v4.8 §11.6), NOT the density ratio. R_B_DERIVED = 0.2545.
++ * Do NOT reuse CLASS's pvecthermo[index_th_R] in the CAR formula —
++ * that is the density ratio and gives superluminal cs² at low z.
++ * Reference: NIPOK, SCT Cosmology Series Paper #16,
++ *            DOI: 10.13140/RG.2.2.10321.29288
 + */
 
- /* In function perturb_derivs(), find: */
- /* Standard CLASS: */
+ /* In function perturb_derivs(), find the baryon-photon sound speed line: */
+ /* Standard CLASS:                                                         */
 -  cs2 = 1.0 / (3.0 * (1.0 + R));
 +
-+  /* ── CAR master equation ──────────────────────────────────── */
-+  cs2 = (1.0 + R) / 3.0;
-+  /* ─────────────────────────────────────────────────────────── */
++  /* ── CAR canonical master equation (v4.8.1) ──────────────────────── */
++  /* R_B_DERIVED = 0.2545 from Paper 17 v4.8 §11.6                        */
++  /* z is the redshift at this thermodynamics step (CLASS provides it)    */
++  {
++    const double R_B_DERIVED_CAR = 0.2545;
++    double R_b_CAR = R_B_DERIVED_CAR / (1.0 + z);
++    cs2 = (1.0 + R_b_CAR) / 3.0;
++  }
++  /* ───────────────────────────────────────────────────────────────────── */
 
- /* Note: In CLASS, R (baryon loading) is computed in thermodynamics.c     */
- /* as pvecthermo[index_th_R]. CLASS automatically propagates R(z)=R0/(1+z)*/
- /* through its thermodynamic integration, so no additional z-evolution     */
- /* of R is required here — CLASS handles this correctly.                   */
+ /* Note: CLASS's pvecthermo[index_th_R] (the standard density ratio R)    */
+ /* is still computed and used elsewhere (recombination, momentum coupling */
+ /* — DO NOT replace those uses. Only cs2 changes to use the CAR formula  */
+ /* with the SCT-derived coherence ratio R_b ≠ R.                          */
 
---- a/source/thermodynamics.c  (sound horizon integral)
+--- a/source/thermodynamics.c
 +++ b/source/thermodynamics.c
-@@ -500,6 +500,10 @@
-+  /* CAR: r_s integral uses cs = sqrt((1+R)/3) instead of sqrt(1/(3(1+R))) */
-+  /* This is handled automatically once cs2 is updated in perturbations.c   */
-+  /* Expected output: r_s ≈ 149.1 Mpc (vs ΛCDM 150.0 Mpc)                 */
+@@ -500,6 +500,12 @@
++  /* CAR: r_s integral uses cs = sqrt((1 + R_b(z))/3) instead of           */
++  /*      sqrt(1/(3(1+R))) — this is handled automatically once cs2 is    */
++  /*      updated in perturbations.c. Verify by checking that the derived */
++  /*      r_s(z_drag) is approximately 161.4 Mpc at H0=70.4 km/s/Mpc.     */
++  /*      (vs ΛCDM unmodified ≈ 144 Mpc; vs Planck observed ≈ 147 Mpc).   */
++  /*      The CAR ansatz does NOT close the BAO tension — see audit       */
++  /*      v4.8.1 in canonical sct_core.py for full discussion.            */
