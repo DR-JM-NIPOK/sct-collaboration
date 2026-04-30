@@ -13,9 +13,13 @@ The DESI-DR2 dataset provides 11 tomographic redshift bins spanning
     α_⊥(z)       (transverse dilation)
 
 CAR modifies r_d via the master equation c_s²(z) = [1 + R_b(z)] / 3,
-shifting r_d from 150.0 Mpc (Planck ΛCDM) to 149.1 ± 0.3 Mpc, which
-reduces the tension with DESI-DR2's preferred value of 147.0 ± 1.0 Mpc
-from 3.0σ (in ΛCDM) to 2.1σ.
+shifting r_d to 161.4 ± 0.3 Mpc (canonical CAR per v4.8.1 audit). The
+audit-disclosed honest finding is that this DOES NOT close the DESI-DR2
+BAO tension — CAR's r_d sits ~14σ above DESI-DR2's preferred value of
+147.0 ± 1.0 Mpc, which is the OPPOSITE direction from earlier paper
+claims (v3.0/v4.0) of r_d ≈ 146.8 or 149.1 Mpc that could not be
+reproduced. This likelihood evaluates the resulting χ² honestly so
+that downstream Bayesian comparisons reflect the true model fit.
 
 Usage
 -----

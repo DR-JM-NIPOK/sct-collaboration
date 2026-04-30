@@ -4,8 +4,12 @@ SCT Cosmology Series | DR JM NIPOK (2026)
 
 FIXES IN v2.0:
   - using_mock flag added for circular-data warning system
-  - Real survey values confirmed: HSC-Y3 = 0.776 ± 0.020 (correct),
-    KiDS-DR5 = 0.815 ± 0.016 (correct — these were already real values)
+  - Real survey values confirmed: HSC-Y3 = 0.776 ± 0.020
+
+FIXES IN v4.8.1 (NLA Recursive Audit):
+  - KiDS-DR5 S8 corrected from internal preliminary 0.815 to published
+    0.788 ± 0.014 (KiDS Collaboration, A&A 688, A120, 2026). The 0.815
+    value was an early internal estimate; the published result is 0.788.
 """
 
 import numpy as np
@@ -18,7 +22,7 @@ class HSC_KiDS_Likelihood:
 
     Published values:
       HSC-Y3  : S8 = 0.776 ± 0.020  (Dalal et al. 2023)
-      KiDS-DR5: S8 = 0.815 ± 0.016  (van den Busch et al. 2024)
+      KiDS-DR5: S8 = 0.788 ± 0.014  (KiDS Collaboration, A&A 688, A120, 2026)
     """
 
     def __init__(self, data_dir=None):
@@ -52,9 +56,9 @@ class HSC_KiDS_Likelihood:
             self.S8_kids_err = float(d[1])
         else:
             self.using_mock = True
-            # Published KiDS-DR5 value
-            self.S8_kids     = 0.815
-            self.S8_kids_err = 0.016
+            # Published KiDS-DR5 value (v4.8.1 audit-corrected)
+            self.S8_kids     = 0.788
+            self.S8_kids_err = 0.014
 
     def compute_chi2(self, S8):
         chi2_hsc  = ((self.S8_hsc  - S8) / self.S8_hsc_err)  ** 2

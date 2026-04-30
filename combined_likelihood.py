@@ -75,10 +75,10 @@ class CombinedLikelihood:
         preds = CAR_predictions(Omega_m=Omega_m)
 
         # Extract parameters — use CAMB-verified values
-        r_d        = preds['r_d_Mpc']          # 149.2 Mpc (CAMB)
+        r_d        = preds['r_d_Mpc']          # 161.4 Mpc (canonical CAR, v4.8.1 audit)
         H0         = preds['H0_km_s_Mpc']       # 70.4 (CAMB)
         S8         = preds['S8']                # 0.783 (analytic, verified)
-        IA_bias    = preds['IA_bias']            # 1.087 (analytic, verified)
+        IA_bias    = preds['IA_bias']            # 1.0848 (analytic, v4.8.1 audit)
         theta_star = preds['theta_star']         # 1.04105 (100×θ*, not radians)
 
         logL_desi     = self.desi.log_likelihood(r_d, Omega_m)

@@ -20,7 +20,7 @@ Survey properties:
 
 CAR modifies the theoretical prediction through:
     1. Modified matter power spectrum from altered sound horizon
-    2. Parameter-free IA bias: b_IA = 1 + R_b0/3 = 1.087
+    2. Parameter-free IA bias: b_IA = 1 + R_b/3 = 1.0848 (v4.8.1 audit; was 1.087 stale)
     3. S₈ suppression from modified growth factor
 
 Author : DR JM NIPOK

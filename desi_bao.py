@@ -51,7 +51,7 @@ class DESI_BAO_Likelihood:
             self.using_mock    = False
         else:
             # ── MOCK DATA — FOR CODE TESTING ONLY ─────────────────────────
-            # Uses ΛCDM fiducial r_d = 147.1 Mpc (NOT CAR's 149.2 Mpc).
+            # Uses ΛCDM fiducial r_d = 147.1 Mpc (NOT CAR's 161.4 Mpc — v4.8.1 audit).
             # Using CAR's own r_d here would make chi-squared ≈ 0 by
             # construction and produce circular Bayesian evidence.
             import warnings
