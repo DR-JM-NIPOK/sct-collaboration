@@ -1,6 +1,6 @@
 """
 growth.py — SCT Modified Growth and Perturbation Framework
-SCT Cosmology Series Paper 11 | DR JM NIPOK, N.J.I.T. (2026)
+SCT Cosmology Series Paper 8 | DR JM NIPOK, N.J.I.T. (2026)
 ORCID: 0009-0006-3940-4450 | License: GPL-3.0
 
 Implements:
@@ -29,7 +29,7 @@ import numpy as np
 from scipy.integrate import quad, odeint
 from coherence import A_eff, f_virial, f_void
 from sct_core import R_B_DERIVED, R_B_UNCERTAINTY
-# R_B0 is now the derived constant from Paper 17 v4.0 Section 11.6
+# R_B0 is now the derived constant from Series 2 Paper 1 Section 11.6
 # DO NOT use 0.260 — use R_B_DERIVED      = 0.2545
 R_B0 = R_B_DERIVED  # 0.2545 derived, not 0.260 matched
 
@@ -45,7 +45,7 @@ NS_CASCADE = 28.0 / 29.0  # = 0.96552, from L=29 cascade levels
 
 def spectral_index_cascade(L: int = 29) -> float:
     """
-    Primordial spectral index from collision cascade (Paper 11, Paper 16).
+    Primordial spectral index from collision cascade (Paper 8, Paper 15).
 
     From dN/dL ∝ L^{-β} with β = 1/L at cascade level L:
         n_s = 1 - 1/L
@@ -57,7 +57,7 @@ def spectral_index_cascade(L: int = 29) -> float:
 
     Parameters
     ----------
-    L : int   Number of cascade levels (Paper 16: L=29)
+    L : int   Number of cascade levels (Paper 15: L=29)
     """
     return 1.0 - 1.0/L
 
@@ -72,7 +72,7 @@ def mu_phi_Horndeski(k_hmpc: float, a: float,
     For G_4X = 0 (GW170817 constraint, enforced by SCT action):
         μ_φ(k, a) ≈ 1 + O(α_B² / M_Pl²) ≈ 1
 
-    The slip parameter η = Φ/Ψ ≈ 1 (Paper 11).
+    The slip parameter η = Φ/Ψ ≈ 1 (Paper 8).
     """
     return 1.0 + 0.0 * alpha_B  # GW170817 forces α_B ≈ 0
 
@@ -82,7 +82,7 @@ def mu_SCT(k_hmpc: float, z: float,
     """
     SCT effective gravitational coupling μ_SCT(k, z).
 
-    From Paper 11 (modified growth equation):
+    From Paper 8 (modified growth equation):
         μ_SCT(k, a) = A(z) × μ_φ(k, a)
 
     Scale dependence:
@@ -112,7 +112,7 @@ def mu_SCT(k_hmpc: float, z: float,
 
 def eta_SCT(k_hmpc: float, z: float) -> float:
     """
-    Gravitational slip parameter η = Φ/Ψ for SCT (Paper 11).
+    Gravitational slip parameter η = Φ/Ψ for SCT (Paper 8).
 
     η_SCT ≈ 1 + O(α_B²/M_Pl²) ≈ 1
 
@@ -128,7 +128,7 @@ def modified_poisson_rhs(k_hmpc: float, z: float,
                           delta_b: float = 1.0,
                           rho_b0: float = None) -> float:
     """
-    Source term for modified Poisson equation (Paper 11):
+    Source term for modified Poisson equation (Paper 8):
 
         k²Φ/a² = -4πG × [ρ_b δ_b × μ_SCT(k,a)]
 
@@ -211,10 +211,10 @@ def sigma8_SCT(sigma8_Planck: float = 0.811,
     """
     SCT prediction for σ₈.
 
-    From Paper 16 §2.5 analytic formula:
+    From Paper 15 §2.5 analytic formula:
         σ8_SCT = σ8_Planck × (1 + R_b/3)^{-1/2}
 
-    Note: Paper 16 uses S8_Planck = 0.832 (S8 not σ8). The σ8 formula:
+    Note: Paper 15 uses S8_Planck = 0.832 (S8 not σ8). The σ8 formula:
         σ8_SCT = σ8_Planck × (1 + R_b/3)^{-1/2}
     """
     return sigma8_Planck * (1.0 + R_B0/3.0)**(-0.5)
@@ -224,7 +224,7 @@ def S8_SCT(S8_Planck: float = 0.832) -> dict:
     """
     S8 = σ8 √(Ω_m/0.3) prediction and verification.
 
-    From Paper 16:
+    From Paper 15:
         S8_SCT = S8_Planck × (1 + R_b/3)^{-1/2} − 0.015
 
     Returns comparison to weak lensing surveys.
@@ -288,9 +288,9 @@ def cs2_CAR_background(z: float) -> float:
     The coherence enhancement R_b_eff ≈ R_b0 × f_virial(z_drag) ≈ 0.
     Therefore cs²_background ≈ 1/3 (identical to ΛCDM at drag epoch).
 
-    Two-regime distinction (Paper 16, proposed addition for v1.8):
+    Two-regime distinction (Paper 15, proposed addition for v1.8):
         Background (sets r_d):    cs² = (1 + R_b × f_virial(z)) / 3
-        Perturbation (sets S8):   cs² = (1 + R_b0) / 3 = 0.4182  (derived, R_b=0.2545, Paper 17 v4.8)
+        Perturbation (sets S8):   cs² = (1 + R_b0) / 3 = 0.4182  (derived, R_b=0.2545, Series 2 Paper 1)
 
     This resolves the θ* trilemma: r_d stays near 147-149 Mpc
     while S8 suppression is preserved from perturbation-sector CAR.
@@ -303,11 +303,11 @@ def cs2_CAR_perturbation(z: float) -> float:
     """
     CAR sound speed for PERTURBATION (S8 suppression) calculation.
 
-    Full R_b0 = 0.2545 (derived, Paper 17 v4.8 Section 11.6) applies in
+    Full R_b0 = 0.2545 (derived, Series 2 Paper 1 Section 11.6) applies in
     the coherence enhancement acts on structure formation.
-    cs² = (1 + R_b0) / 3 = 0.4182  (derived, Paper 17 v4.8 Section 11.6)
+    cs² = (1 + R_b0) / 3 = 0.4182  (derived, Series 2 Paper 1 Section 11.6)
     """
-    R_b_z = R_B0 / (1.0 + z)   # evolves with redshift per Paper 16
+    R_b_z = R_B0 / (1.0 + z)   # evolves with redshift per Paper 15
     return (1.0 + R_b_z) / 3.0
 
 
@@ -317,7 +317,7 @@ def growth_report() -> None:
     w = 65
     print()
     print('=' * w)
-    print('  SCT Modified Growth Framework | Paper 11 | v2.0')
+    print('  SCT Modified Growth Framework | Paper 8 | v2.0')
     print('=' * w)
 
     ns = spectral_index_cascade()

@@ -1,6 +1,6 @@
 """
 hereditary.py — SCT Hereditary Time and Frame-Tree Lorentz Framework
-SCT Cosmology Series Papers 2, 18 | DR JM NIPOK, N.J.I.T. (2026)
+SCT Cosmology Series Paper 2; Series 2 Paper 2 | DR JM NIPOK, N.J.I.T. (2026)
 ORCID: 0009-0006-3940-4450 | License: GPL-3.0
 
 Implements:
@@ -14,7 +14,7 @@ MATH AUDIT (April 2026):
   Gravitational factor: 0.99993945  ✓
   Velocity factor:      0.99999720  ✓
   dτ/dt = 0.99993666                ✓
-  Clock slow by: 63.34 ppm  [Paper 18 claim: ~63 ppm]  ✓
+  Clock slow by: 63.34 ppm  [Series 2 Paper 2 claim: ~63 ppm]  ✓
 """
 
 import numpy as np
@@ -122,7 +122,7 @@ def proper_time_ratio(frames: List[Frame] = None) -> dict:
         'grav_product':   grav_product,
         'vel_product':    vel_product,
         'breakdown':      breakdown,
-        '_paper_claim':   '~63 ppm (Paper 18)',
+        '_paper_claim':   '~63 ppm (Series 2 Paper 2)',
         '_verified':      True,
     }
 
@@ -267,7 +267,7 @@ def hereditary_report() -> None:
     w = 65
     print()
     print('=' * w)
-    print('  SCT Hereditary Time | Papers 2, 18 | v2.0')
+    print('  SCT Hereditary Time | Paper 2; Series 2 Paper 2 | v2.0')
     print('=' * w)
 
     pt = proper_time_ratio()
@@ -280,7 +280,7 @@ def hereditary_report() -> None:
     print(f'  Velocity factor:      {pt["vel_product"]:.10f}')
     print(f'  dτ_local/dt_cosmic:   {pt["tau_ratio"]:.10f}')
     print(f'  Clock bias:           {pt["ppm_slow"]:.2f} ppm slow')
-    print(f'  [Paper 18 claims:     ~63 ppm]')
+    print(f'  [Series 2 Paper 2 claims:     ~63 ppm]')
 
     h0b = H0_bias_from_frames()
     print(f'\n  H0 frame-tree bias:')

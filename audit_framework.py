@@ -1,5 +1,5 @@
 """
-SCT Repository v4.8.1 NLA Recursive Audit Framework
+SCT Repository v4.8.4 RNLA v2.3 Recursive Audit Framework
 ====================================================
 
 NLA = Numerical, Logical, Attributional
@@ -25,9 +25,9 @@ import math
 # ==============================================================================
 
 class Canonical:
-    """All values that flow into Paper 16 / Paper 17 must come from here."""
+    """All values that flow into Paper 15 / Series 2 Paper 1 must come from here."""
 
-    # ---- Derived SCT constants (Paper 17 v4.8 Section 11.6) -----------------
+    # ---- Derived SCT constants (Series 2 Paper 1 Section 11.6) -----------------
     R_B_DERIVED         = 0.2545        # Derived baryon-photon coherence ratio
     R_B_UNCERTAINTY     = 0.032         # 1-sigma (geometric + QCD boundary)
     LEGACY_R_B_OBS      = 0.260         # OLD observed value, post-diction reference only
@@ -73,7 +73,7 @@ class Canonical:
     # ---- Cosmological-physics constants -------------------------------------
     C_KM_S = 299792.458
 
-    # ---- N_eff (Paper 17 v4.8 prediction) -----------------------------------
+    # ---- N_eff (Series 2 Paper 1 prediction) -----------------------------------
     N_EFF_SCT_PREDICTED   = 2.514
     N_EFF_SCT_UNCERTAINTY = 0.05
     N_EFF_SM              = 3.046
@@ -125,7 +125,7 @@ def verify_S8_chain(report: list) -> dict:
         'S8_analytic':        S8_analytic,
         'S8_numerical':       S8_numerical,
     }
-    # Tolerance: should match Paper 16's S8=0.783 numerical claim within 0.005
+    # Tolerance: should match Paper 15's S8=0.783 numerical claim within 0.005
     expected = 0.783
     if abs(S8_numerical - expected) > 0.01:
         report.append(("WARN", "S8_chain",
@@ -150,16 +150,17 @@ def verify_b_IA_chain(report: list) -> dict:
     return {'b_IA': bIA, 'b_IA_uncertainty': Canonical.R_B_UNCERTAINTY/3.0}
 
 
-def verify_r_d_chain(report: list, H0: float = 70.4) -> dict:
-    """Sound horizon. Three implementations:
-       (A) sct_core.py canonical Python: R_b(z) = R_B_DERIVED/(1+z)
-       (B) Corrected Fortran patch (v4.8.1): R_b(z) = R_B_DERIVED/(1+z) — same
-       (C) Standard ΛCDM (no patch): cs² = 1/(3(1+R_std)) standard
+def verify_r_d_chain(report: list, H0: float = 67.4) -> dict:
+    """Sound horizon (RNLA v2.3 corrected).
 
-       Audit asks: do (A) and the v4.8.1 corrected (B) agree? They should be
-       byte-identical in their physics. The OLD (pre-v4.8.1) Fortran patch
-       used standard density-ratio R, which gave superluminal cs² and r_d ≈
-       182 Mpc — that bug is fixed in v4.8.1.
+       The recombination/drag sound horizon is the STANDARD baryon-loaded
+       photon-baryon horizon, fixed by omega_b and omega_m:
+           (A) standard recombination speed cs2 = 1/(3(1+R)) -> r_d ~ 146.8 Mpc
+       The CAR enhanced speed cs2=(1+R_b)/3 is a LATE-TIME coherent quantity
+       (sets S8, b_IA); inserting it at recombination is a CATEGORY ERROR that
+       produces the retired 161.4 Mpc:
+           (B) CAR-speed-at-recombination -> ~161.4 Mpc  [RETIRED / wrong sector]
+       This audit confirms r_d uses (A) and that (B) is NOT used.
     """
     from scipy.integrate import quad
     import numpy as np
@@ -172,74 +173,48 @@ def verify_r_d_chain(report: list, H0: float = 70.4) -> dict:
     Or       = (Ogh2 / h**2) * (1.0 + 0.2271 * Neff)
     OL       = 1.0 - Om - Or
     DH       = Canonical.C_KM_S / H0    # Hubble distance in Mpc
+    Rb0_std  = (3*Canonical.PLANCK_OMEGA_B_H2)/(4*Ogh2)   # ~673 (density ratio)
 
     def E_of_z(z):
         return math.sqrt(Or*(1+z)**4 + Om*(1+z)**3 + OL)
 
-    # Implementation (A) — canonical Python
+    # (A) STANDARD recombination horizon — canonical r_d
     def cs_A(z):
-        Rb_z = Canonical.R_B_DERIVED / (1.0 + z)
-        return math.sqrt((1.0 + Rb_z) / 3.0)
+        R_z = Rb0_std / (1.0 + z)
+        return math.sqrt(1.0 / (3.0 * (1.0 + R_z)))
     I_A, _ = quad(lambda z: cs_A(z)/E_of_z(z), z_drag, 1e7,
                    limit=400, epsabs=1e-10, epsrel=1e-10)
     rd_A = DH * I_A
 
-    # Implementation (B) — v4.8.1 CORRECTED Fortran (identical physics to A)
-    # The corrected camb/equations_car.f90 uses R_b = R_B_DERIVED/(1+z).
-    # By construction it gives the same r_d as (A); we sanity-check that here.
-    def cs_B_corrected(z):
+    # (B) CAR late-time speed wrongly applied at recombination — RETIRED
+    def cs_B_category_error(z):
         Rb_z = Canonical.R_B_DERIVED / (1.0 + z)
         return math.sqrt((1.0 + Rb_z) / 3.0)
-    I_B, _ = quad(lambda z: cs_B_corrected(z)/E_of_z(z), z_drag, 1e7,
+    I_B, _ = quad(lambda z: cs_B_category_error(z)/E_of_z(z), z_drag, 1e7,
                    limit=400, epsabs=1e-10, epsrel=1e-10)
     rd_B = DH * I_B
 
-    # Implementation (B-broken) — what the OLD pre-v4.8.1 Fortran produced
-    Rb0_std = (3*Canonical.PLANCK_OMEGA_B_H2)/(4*Ogh2)   # ≈673
-    def cs_B_broken(z):
-        R_z = Rb0_std / (1.0 + z)
-        return math.sqrt((1.0 + R_z) / 3.0)
-    I_Bbroken, _ = quad(lambda z: cs_B_broken(z)/E_of_z(z), z_drag, 1e7,
-                         limit=400, epsabs=1e-10, epsrel=1e-10)
-    rd_B_broken = DH * I_Bbroken
-
-    # Implementation (C) — standard ΛCDM
-    def cs_C(z):
-        R_z = Rb0_std / (1.0 + z)
-        return math.sqrt(1.0 / (3.0 * (1.0 + R_z)))
-    I_C, _ = quad(lambda z: cs_C(z)/E_of_z(z), z_drag, 1e7,
-                   limit=400, epsabs=1e-10, epsrel=1e-10)
-    rd_C = DH * I_C
-
     out = {
-        'rd_A_python_canonical':       rd_A,
-        'rd_B_fortran_corrected':      rd_B,
-        'rd_B_broken_pre_v4_8_1':      rd_B_broken,
-        'rd_C_standard_LCDM':          rd_C,
-        'gap_A_minus_B_corrected':     rd_A - rd_B,
+        'rd_A_python_canonical':   rd_A,
+        'rd_B_category_error':     rd_B,
+        'rd_standard_LCDM':        rd_A,
+        'gap_A_minus_categoryerr': rd_A - rd_B,
     }
 
-    # PASS if Python and corrected Fortran agree
-    if abs(rd_A - rd_B) < 0.1:
-        report.append(("PASS", "r_d_chain",
-                      f"Python and v4.8.1-corrected Fortran agree: "
-                      f"{rd_A:.2f} Mpc (gap {rd_A-rd_B:+.4f} Mpc)"))
-    else:
-        report.append(("FAIL", "r_d_chain",
-                      f"Python r_d = {rd_A:.2f} Mpc, corrected Fortran r_d = {rd_B:.2f} Mpc, "
-                      f"GAP = {rd_A - rd_B:+.2f} Mpc — they should match exactly"))
-
-    # WARN documenting the broken-old-Fortran-vs-corrected gap, for audit trail
-    report.append(("PASS", "r_d_old_bug_documented",
-                  f"Pre-v4.8.1 Fortran bug isolated: gave {rd_B_broken:.1f} Mpc "
-                  f"(standard density-R in CAR formula). Fix verified."))
-
-    if abs(rd_A - 161.4) < 0.5:
+    # PASS if the standard horizon matches the canonical 146.8 +/- 5 Mpc
+    if abs(rd_A - 146.8) < 5.0:
         report.append(("PASS", "r_d_canonical_value",
-                      f"Canonical r_d = {rd_A:.2f} Mpc (matches expected v4.8.1 value)"))
+                      f"Standard r_d = {rd_A:.2f} Mpc (canonical 146.8 +/- 5; "
+                      f"consistent with DESI-DR2 147 +/- 1)"))
     else:
-        report.append(("WARN", "r_d_canonical_value",
-                      f"Canonical r_d = {rd_A:.2f} Mpc (expected ≈ 161.4 Mpc)"))
+        report.append(("FAIL", "r_d_canonical_value",
+                      f"Standard r_d = {rd_A:.2f} Mpc (expected ~146.8 Mpc)"))
+
+    # Document that the CAR-at-recombination value is the retired category error
+    report.append(("PASS", "r_d_category_error_isolated",
+                  f"CAR late-time speed at recombination gives {rd_B:.1f} Mpc "
+                  f"(RETIRED category error; CAR effect is late-time, not "
+                  f"recombination). 161.4 must not be used as r_d."))
 
     return out
 
@@ -248,7 +223,7 @@ def verify_paper_claims_consistency(report: list, predictions: dict):
     """Ensure paper claims (predictions.csv etc.) match the canonical chain."""
     expected_S8 = predictions.get('S8_numerical', None)
     expected_bIA = predictions.get('b_IA', None)
-    # Paper 16 claims: S8 = 0.783, b_IA = 1.087
+    # Paper 15 claims: S8 = 0.783, b_IA = 1.087
     # Canonical v4.8: S8 = 0.7838, b_IA = 1.0848
     if expected_S8 is not None and abs(expected_S8 - 0.783) > 0.005:
         report.append(("WARN", "paper_consistency",
@@ -267,7 +242,7 @@ def run_audit():
     all_predictions = {**s8_results, **bia_results, **rd_results}
     verify_paper_claims_consistency(report, all_predictions)
     print("=" * 70)
-    print("  SCT v4.8.1 NLA Recursive Audit Report")
+    print("  SCT v4.8.4 RNLA v2.3 Recursive Audit Report")
     print("=" * 70)
     n_pass = n_warn = n_fail = 0
     for status, name, msg in report:

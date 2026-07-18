@@ -3,7 +3,92 @@
 All notable changes to the `sct-collaboration` repository are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [4.8.5] — 2026-07-17
+
+### Added — register update from in-session CAMB/SPARC verification note
+Source: `SCT_VERIFICATION_NOTE_CAMB_SPARC_20260710.md` (CAMB 1.6.6, pip, Linux
+sandbox; Planck 2018 binned TT spectrum; SPARC Lelli+2016c tables). No numeric
+constants changed in this release — this is a documentation/register update only.
+
+- **tensions.csv (x2, root + paper17-v4-deriver-Rb):** new row **T031** — N_eff
+  tension (SCT 2.514 vs Planck 2.99 ± 0.17, 2.8σ). Naively substituting N_eff =
+  2.514 into stock ΛCDM at fixed θ* is excluded at **Δχ² ≈ +658** over 83 Planck
+  TT binned band powers (H0 dragged to ≈61.3). Logged as OPEN (PARTIAL).
+- **predictions.csv (x2):** P088 notes expanded with the Δχ² ≈ +658 quantification
+  and a register-consistency flag: the H0≈66–67 note reproduces only under
+  standard N_eff=3.044 (θ*+standard EOS → H0=65.93); combined with N_eff=2.514 it
+  gives H0=60.15 instead. Status changed PENDING → **PENDING (PARTIAL sub-check,
+  see notes)**. Which era N_eff=2.514 describes (recombination vs. the late-time
+  quantity CMB-S4 will actually measure) is flagged as an open question requiring
+  the CAR-patched Boltzmann run to resolve.
+- **README.md (root):** N_eff row in the status table footnoted with the same
+  register-consistency caveat; the stale "Paper 15 will be rewritten to reflect
+  this [r_d fix]" line corrected — Paper 15 (v2.22, 2026-06) already reflects the
+  RNLA v2.3 r_d correction, confirmed against the author's current draft.
+- **paper17-v4-deriver-Rb/README.md:** same N_eff register-consistency caveat
+  added near its Key Constants table.
+- **sct_core.py (x10):** VERSION HISTORY entry added; validation-report and
+  compact-report headers/footers updated to v4.8.5 with a "REGISTER UPDATE —
+  v4.8.5" note block (mirrors the existing v4.8.4 AUDIT NOTE block, does not
+  replace it). All printed numeric values are byte-for-byte unchanged from
+  v4.8.4 (verified: R_b, c_s², b_IA, r_d, H0, N_eff all identical).
+- **Audit-trail cross-reference (no action needed):** the verification note
+  observes that r_drag at N_eff=2.514 (149.86 Mpc) numerically coincides with
+  the retired 149.1 Mpc r_d value from earlier drafts. This is a coincidence of
+  two unrelated calculations, not a revival of the retracted figure — r_d
+  remains 146.8 Mpc (v4.8.4, RNLA v2.3), unchanged here.
+
+### Out of scope for this repository
+The verification note's SPARC/RAR full-sample recovery (W224) and CMB tilt-
+running check (W204) concern papers S1_09 and S1_04 respectively, which are not
+part of this code repository and are not modified here.
+
+### Unchanged
+A* = 6.173, N_coh = 14.06, f_b = 0.162; R_b = 0.2545, c_s² = 0.41817,
+b_IA = 1.0848, r_d = 146.8 Mpc, H0 ≈ 66.3, N_eff = 2.514 (value unchanged;
+status note updated) — all v4.8.4 canonical values carry forward unmodified.
+
 ---
+
+---
+
+## [4.8.4] — 2026-06-19
+
+### Fixed — RNLA v2.3 recursive audit (checks 13, 14, 15)
+- **r_d restored to the standard photon-baryon horizon 146.8 Mpc** (r_*(z*) = 144.4 Mpc). The v4.8.1 value 161.4 Mpc was a **category error**: it inserted the CAR *late-time* coherent sound speed (cs²=(1+R_b)/3) into the *recombination* sound-horizon integral. At recombination R_b→0 so that speed → 1/3 (pure-radiation, no baryon loading), inflating the horizon. The recombination acoustic speed is the standard baryon-loaded 1/[3(1+R)].
+- **The CAR enhancement is now correctly scoped as a late-time coherent-sector effect** (it sets S8 and b_IA), not a recombination modification. `sct_core.compute_r_d_integral` now uses the standard baryon-loaded speed → r_d ≈ 146.8 Mpc; `equations_car.f90` / `perturbations_car.c` reframed to late-time scope; the recombination-cs2 patches (`equations_CAR.patch`, `perturbations_CAR.patch`) are **retired** (deprecation notices, no hunks).
+- **Standard r_d = 146.8 Mpc is CONSISTENT with DESI-DR2 BAO (147 ± 1 Mpc, ~0.2σ)** — SCT introduces no early-time BAO tension. The prior "CAR r_d in ~14σ tension / does not close DESI" claim is retired.
+- **H0 corrected**: global θ*+r_d gives H0 ≈ 66.3 km/s/Mpc (PARTIAL). The previously reported 70.4 km/s/Mpc is **not CMB-derivable** and is retired; local H0 is raised toward 70–73 by the late-time void + temporal mechanism.
+- **A_lens relabelled as accommodation / post-diction** in `tensions.csv` (T003: "Resolved (SCT derives 1.19)" → "Consistent (post-diction; A_lens≈1.18 tuned to the pre-existing Planck anomaly, not derived)"), matching `predictions.csv` P007.
+- Stale example outputs in `SETUP_INSTRUCTIONS.md` and several READMEs corrected to canonical values (R_b=0.2545, c_s²=0.41817, b_IA=1.0848, r_d=146.8, H0=66.3).
+- `tests/`, `audit_framework.py` updated; full suite passes (54/54).
+- **bh_interior.py (TOV + QCD floor) Module-E fix**: replaced a non-convergent brentq EOS inversion with the exact analytic inverse; corrected two dimensional bugs (stray c² in the EOS normalization and in the dP/dr prefactor) so the TOV is the standard SI form `dP/dr=-(G/c⁴)(ε+P)(Mc²+4πr³P)/[r²(1-2GM/c²r)]`. The module now runs end-to-end and yields km-scale neutron stars. NOTE: with the current (stiff) EOS normalization M_max≈3.0-3.3 M_sun; the exact M_max/R is an EOS-calibration choice (flagged in the file).
+
+### Unchanged
+- A* = 6.173, N_coh = 14.06, f_b = 0.162 (6.17 re-cascade, v4.8.2); R_b = 0.2545, c_s² = 0.41817, b_IA = 1.0848, N_eff = 2.514, predictions catalog = 115 (v4.8.3).
+
+---
+
+
+## [4.8.2] — 2026-06-17
+
+### Changed — A* re-cascade (single derived baryon fraction)
+- A* 5.970 → **6.173** (= 1/f_b), status MATCHED → **DERIVED**.
+- N_coh 13.51 → **14.06** (= e(A*-1)).
+- f_b unified to the cascade-derived **0.162** (Route 2A); the prior measured-cluster anchor 0.1675 and the f_b,vir/f_b,cosmic split are removed.
+- Rationale rewritten in coherence.py: A* is now DERIVED from f_b=0.162, not anchored to a cluster measurement (the prior "clusters retain more baryons than cosmic" justification, contradicted by X-COP depletion, is removed).
+- predictions.csv P06 (A*) and P07 (f_b) updated to derived values/uncertainties; status CONFIRMED → CONSISTENT. Universality falsifier f_b×A*=1 preserved (6.173×0.162=1.000).
+- UNCHANGED (verified): R_b=0.2545, c_s²=0.41817, N_eff=2.514, b_IA=1.0848, r_d — the CAMB/CLASS/cosmology sector is unaffected.
+
+### Needs review (flagged, not auto-changed)
+- A_lens (P22), μ_SCT (P19, A_eff range), rotation-curve fit r (P24), tension T023 — all depend on A* via A_eff(z) and must be recomputed (Phase 6).
+
+## [4.8.3] - 2026-06-17
+
+### Changed - predictions catalog + paper renumbering
+- predictions.csv expanded from 32 to the full **115-prediction timeline catalog** (from Paper 18 / Confirming Falsifiability), with current status: CONFIRMED 2, CONSISTENT 18, PENDING 90, CONSISTENCY-REQUIREMENT 2 (#3,#33), OPEN-DERIVATION 3 (#113-115). Paper attributions use current numbering.
+- All cross-references remapped from the legacy file-number scheme to current Series/Paper numbering via the authoritative register. Key remaps: old "Paper 16" -> Paper 15 (Codified Acoustics); old "Paper 17" -> Series 2 Paper 1 (Coalescent Parsimony); old "Paper 14" -> Paper 9; old "Paper 6" -> Paper 11; old "Paper 13" -> Paper 12. Full map in SITE_CHANGES.
+- Carries forward the v4.8.2 A* re-cascade (A*=6.173, N_coh=14.06, f_b=0.162).
 
 ## [4.8.1] — 2026-04-26
 
@@ -49,7 +134,7 @@ and 28σ above Planck. By contrast:
 
 The CAR ansatz therefore needs reframing as resolving S8 and contributing
 to (but not closing) the H0 tension, while the BAO sector requires
-additional physics. **Paper 16 v3.0 will rewrite the BAO discussion**;
+additional physics. **Paper 15 will rewrite the BAO discussion**;
 S8/b_IA results carry forward unchanged.
 
 ### Changed files in v4.8.1
@@ -97,8 +182,8 @@ S8/b_IA results carry forward unchanged.
 - P01: S8 0.783 → **0.7838** (full precision from canonical analytic chain)
 - P03: r_d 149.2 ± 0.4 "CONFIRMED" → **161.4 ± 0.3 "DOES NOT CLOSE TENSION"**
 - P04: b_IA 1.087 ± 0.005 → **1.0848 ± 0.011** (canonical, audit-corrected)
-- P31 (NEW): N_eff_SCT = 2.514 ± 0.05 from Paper 17 v4.8 §11.6
-- P32 (NEW): R_b derived = 0.2545 ± 0.032 from Paper 17 v4.8 §11.6
+- P31 (NEW): N_eff_SCT = 2.514 ± 0.05 from Series 2 Paper 1 §11.6
+- P32 (NEW): R_b derived = 0.2545 ± 0.032 from Series 2 Paper 1 §11.6
 
 #### `CHANGELOG.md` (this file) — fully synchronized to v4.8.1
 #### `README.md` (root) — updated with v4.8.1 status and audit summary
@@ -141,9 +226,9 @@ The `--validate` output should show:
 
 ### Epistemic upgrade — R_b transitions to derived constant
 
-Paper 17 v4.8 Section 11.6 derives R_b = 0.2545 ± 0.032 from first
+Series 2 Paper 1 Section 11.6 derives R_b = 0.2545 ± 0.032 from first
 principles: SO(3) cascade angular momentum + QCD junction conditions
-(Israel-Darmois, Paper 14, 13.6% loss). No observational input.
+(Israel-Darmois, Paper 9; Paper 12.6% loss). No observational input.
 
 - `R_B_DERIVED = 0.2545` replaces matched value 0.260
 - `c_s² = 0.41817` derived from (1 + R_b)/3
@@ -183,6 +268,6 @@ evidence calculations (now resolved by v4.8 derivation).
 ## Authoring & License
 
 DR JM NIPOK | N.J.I.T. | ORCID 0009-0006-3940-4450
-Paper 16 DOI: 10.13140/RG.2.2.10321.29288
-Paper 17 DOI: 10.13140/RG.2.2.14355.03366
+Paper 15 DOI: 10.13140/RG.2.2.10321.29288
+Series 2 Paper 1 DOI: 10.13140/RG.2.2.14355.03366
 License: GPL-3.0

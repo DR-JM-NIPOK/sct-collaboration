@@ -1,6 +1,6 @@
 """
 bh_interior.py — SCT Black Hole Interior: TOV + QCD Floor
-SCT Cosmology Series Paper 9 | DR JM NIPOK, N.J.I.T. (2026)
+SCT Cosmology Series Paper 16 | DR JM NIPOK, N.J.I.T. (2026)
 ORCID: 0009-0006-3940-4450 | License: GPL-3.0
 
 Implements the Tolman-Oppenheimer-Volkoff (TOV) equation with the
@@ -8,14 +8,25 @@ QCD-based equation of state that provides SCT's singularity floor.
 
 Key result: Gravitational collapse halts at ε ≈ (2-5) × ε_nuc,
 preventing the central singularity predicted by classical GR.
-Maximum neutron star mass M_max ~ 2.0 ± 0.5 M_sun.
 
-MATH AUDIT (April 2026):
-  TOV equations verified dimensionally ✓
-  QCD EOS range: ε = 4.6e17 to 1.15e18 kg/m³  ✓
-  M_max = 1.5-2.5 M_sun  (consistent with GW190814 2.6 M_sun)  ✓
-  P(R_core) = 0 from Israel-Darmois junction conditions  ✓
-  Causality: 0 < dP/dε ≤ c² (speed of sound ≤ c)  ✓
+MATH AUDIT (RNLA v2.3, June 2026):
+  TOV equations rewritten in dimensionally-consistent SI form ✓
+    dP/dr = -(G/c^4)(ε+P)(Mc^2 + 4π r^3 P) / [r^2 (1 - 2GM/c^2 r)]
+    dM/dr = 4π r^2 ε / c^2
+  EOS made dimensionless-consistent (P and ε both in J/m^3; cs^2 in units
+    of c^2): P = 0.1 ε at saturation; linear branch P = P_tr + cs^2 (ε-ε_QCD) ✓
+  EOS inversion is analytic (exact), replacing a non-convergent brentq call ✓
+  Causality: 0 < dP/dε ≤ c^2  ✓
+  NOTE: with the current normalization (P=0.1 ε at saturation, Γ=2, stiff
+  linear quark branch cs^2=0.5 c^2) the integrated M_max is ~3 M_sun at
+  R~18 km — a very stiff EOS. The exact M_max/R depend on this EOS
+  normalization (K, Γ, cs^2), which is an author calibration choice; soften
+  the normalization to land in the canonical 1.5-2.5 M_sun / 10-13 km range.
+
+HISTORY: prior versions had two dimensional bugs (an extra c^2 in the EOS and
+in the dP/dr prefactor) that made the pressure scale height ~1e-10 m, plus a
+brentq EOS inversion over a 1e10-1e36 bracket that failed to converge. Both
+are fixed here.
 """
 
 import numpy as np
@@ -27,6 +38,7 @@ from dataclasses import dataclass
 G_SI  = 6.674e-11       # m^3 kg^-1 s^-2
 C_SI  = 2.998e8         # m/s
 C2    = C_SI**2
+C4    = C2**2
 M_SUN = 1.989e30        # kg
 KM    = 1e3             # m
 
@@ -34,56 +46,48 @@ KM    = 1e3             # m
 RHO_SAT    = 2.3e17     # kg/m^3 — nuclear saturation density
 EPS_SAT    = RHO_SAT * C2   # energy density at saturation [J/m^3]
 
-# ── SCT QCD floor parameters (Paper 9) ───────────────────────────────────────
+# ── SCT QCD floor parameters (Paper 16) ───────────────────────────────────────
 EPS_QCD_MIN = 2.0 * EPS_SAT   # minimum QCD floor
 EPS_QCD_MAX = 5.0 * EPS_SAT   # maximum QCD floor (stiffer EOS)
 EPS_QCD_MID = 3.5 * EPS_SAT   # fiducial mid-range value
-CS2_QCD_MIN = 0.2 * C2        # min sound speed squared (soft EOS)
-CS2_QCD_MAX = 0.8 * C2        # max sound speed squared (stiff EOS)
+# Sound speeds above the QCD transition, in UNITS OF c^2 (dimensionless),
+# from lattice-QCD causality bounds cs^2/c^2 ∈ [0.2, 0.8].
+CS2_QCD_MIN = 0.2             # soft EOS
+CS2_QCD_MAX = 0.8             # stiff EOS
+
+# Pressure / energy-density ratio at nuclear saturation (dimensionless).
+P_OVER_EPS_SAT = 0.1
+# Polytropic index of the sub-transition branch (matches pressure_QCD's use).
+GAMMA_POLY = 2.0
 
 
 # ── EQUATION OF STATE ─────────────────────────────────────────────────────────
 
 def pressure_polytropic(eps: float,
                          eps_0: float = EPS_QCD_MID,
-                         Gamma: float = 2.0) -> float:
+                         Gamma: float = GAMMA_POLY) -> float:
     """
-    Piecewise polytropic EOS for neutron star matter.
+    Polytropic EOS for sub-transition matter:  P(ε) = K ε^Γ.
 
-    Below QCD floor (ε < ε_0): nuclear crust EOS (soft)
-    Above QCD floor (ε ≥ ε_0): QCD/quark EOS (stiff)
-
-    P(ε) = K × ε^Γ
-
-    Parameters
-    ----------
-    eps   : float   Energy density [J/m^3]
-    eps_0 : float   QCD transition energy density
-    Gamma : float   Polytropic index (2.0 for stiff, 1.5 for soft)
+    K is fixed by P = 0.1 ε at nuclear saturation (dimensionless ratio; P and
+    ε share units J/m^3). Γ = 2 by default.
     """
     if eps <= 0:
         return 0.0
-    # Normalise: P = 0.1 c² ε at nuclear saturation
-    P0 = 0.1 * C2 * EPS_SAT
+    P0 = P_OVER_EPS_SAT * EPS_SAT            # P = 0.1 ε at saturation
     K  = P0 / EPS_SAT**Gamma
     return K * eps**Gamma
 
 
 def pressure_QCD(eps: float,
                   eps_QCD: float = EPS_QCD_MID,
-                  cs2_QCD: float = 0.5 * C2) -> float:
+                  cs2_QCD: float = 0.5) -> float:
     """
-    Linear (conformal) EOS above QCD transition (Paper 9).
+    Linear (conformal) EOS above the QCD transition (Paper 16):
 
-    P = P_transition + cs² × (ε - ε_QCD)
+        P = P_transition + cs^2 (ε - ε_QCD)
 
-    where cs² ∈ [0.2, 0.8] c² from lattice QCD constraints.
-
-    Parameters
-    ----------
-    eps     : float   Energy density
-    eps_QCD : float   Transition density
-    cs2_QCD : float   Sound speed squared above transition [m^2/s^2]
+    cs2_QCD is dimensionless (units of c^2), cs^2/c^2 ∈ [0.2, 0.8].
     """
     P_trans = pressure_polytropic(eps_QCD)
     if eps <= eps_QCD:
@@ -96,125 +100,116 @@ def eos(eps: float, model: str = 'mid') -> float:
     SCT equation of state P(ε).
 
     Models:
-        'soft' : Γ=1.5, cs²=0.2c² — minimum stiffness (QCD causality floor)
-        'mid'  : Γ=2.0, cs²=0.5c² — fiducial
-        'stiff': Γ=2.5, cs²=0.8c² — maximum stiffness
-
-    Parameters
-    ----------
-    eps   : float   Energy density [J/m^3]
-    model : str     EOS stiffness model
+        'soft' : cs²=0.2c² — minimum stiffness (QCD causality floor)
+        'mid'  : cs²=0.5c² — fiducial
+        'stiff': cs²=0.8c² — maximum stiffness
     """
     params = {
-        'soft':  (EPS_QCD_MIN, CS2_QCD_MIN, 1.5),
-        'mid':   (EPS_QCD_MID, 0.5 * C2,   2.0),
-        'stiff': (EPS_QCD_MAX, CS2_QCD_MAX, 2.5),
+        'soft':  (EPS_QCD_MIN, CS2_QCD_MIN),
+        'mid':   (EPS_QCD_MID, 0.5),
+        'stiff': (EPS_QCD_MAX, CS2_QCD_MAX),
     }
-    eps_q, cs2_q, Gamma = params[model]
+    eps_q, cs2_q = params[model]
     return pressure_QCD(eps, eps_q, cs2_q)
 
 
-def dP_deps(eps: float, model: str = 'mid', dE: float = 1e10) -> float:
-    """Sound speed squared cs² = dP/dε (numerical derivative)."""
+def eps_from_P(P: float, model: str = 'mid') -> float:
+    """
+    Analytic inverse of eos(): energy density ε from pressure P.
+
+    The EOS is piecewise and exactly invertible, so no root finder is needed
+    (the previous brentq inversion over the 1e10–1e36 bracket failed to
+    converge). Reproduces the forward map to machine precision.
+
+        P ≤ P_trans :  P = K ε^Γ               →  ε = (P/K)^(1/Γ)
+        P > P_trans :  P = P_trans + cs²(ε-ε_QCD) →  ε = ε_QCD + (P-P_trans)/cs²
+    """
+    if P <= 0.0:
+        return 0.0
+    params = {
+        'soft':  (EPS_QCD_MIN, CS2_QCD_MIN),
+        'mid':   (EPS_QCD_MID, 0.5),
+        'stiff': (EPS_QCD_MAX, CS2_QCD_MAX),
+    }
+    eps_q, cs2_q = params[model]
+    K       = (P_OVER_EPS_SAT * EPS_SAT) / EPS_SAT**GAMMA_POLY
+    P_trans = K * eps_q**GAMMA_POLY
+    if P <= P_trans:
+        return (P / K) ** (1.0 / GAMMA_POLY)
+    return eps_q + (P - P_trans) / cs2_q
+
+
+def dP_deps(eps: float, model: str = 'mid', dE: float = 1e30) -> float:
+    """Sound speed squared cs² = dP/dε in units of c² (numerical derivative)."""
     P_hi = eos(eps + dE, model)
-    P_lo = eos(max(eps - dE, 1e10), model)
+    P_lo = eos(max(eps - dE, 1.0), model)
     cs2  = (P_hi - P_lo) / (2 * dE)
-    # Enforce causality: cs² ∈ (0, c²)
-    return max(0.0, min(cs2, C2))
+    # Enforce causality: cs²/c² ∈ (0, 1]
+    return max(0.0, min(cs2, 1.0))
 
 
 # ── TOV EQUATIONS ─────────────────────────────────────────────────────────────
 
 def tov_rhs(r: float, y: np.ndarray, model: str = 'mid') -> np.ndarray:
     """
-    Tolman-Oppenheimer-Volkoff equations (Paper 9).
+    Tolman-Oppenheimer-Volkoff equations in dimensionally-consistent SI form.
 
-    State vector: y = [M(r), P(r), Φ(r)]
+    State vector: y = [M(r) [kg], P(r) [J/m^3], Φ(r)]
 
-    dM/dr = 4π r² ε(r) / c²
-    dP/dr = -G/c² × (ε + P/c²)(Mc² + 4πr³P) / [r²(1 - 2GM/c²r)]
-    dΦ/dr = -1/(ε + P/c²) × dP/dr
-
-    Parameters
-    ----------
-    r     : float     Radius [m]
-    y     : array     [M [kg], P [J/m^3], Phi [dimensionless]]
-    model : str       EOS model
-
-    Returns
-    -------
-    [dM/dr, dP/dr, dPhi/dr]
+        dM/dr = 4π r² ε / c²
+        dP/dr = -(G/c⁴)(ε + P)(M c² + 4π r³ P) / [r²(1 - 2GM/c²r)]
+        dΦ/dr = -dP/dr / (ε + P)
     """
     M, P, Phi = y
     if r <= 0 or P <= 0:
         return [0.0, 0.0, 0.0]
 
-    # Invert EOS to get energy density from pressure
-    # Use bisection since eos is monotonic
-    from scipy.optimize import brentq
-    try:
-        eps = brentq(lambda e: eos(e, model) - P, 1e10, 1e36,
-                     xtol=1e5, maxiter=100)
-    except ValueError:
-        return [0.0, -1e30, 0.0]  # signal termination
+    eps = eps_from_P(P, model)            # analytic, exact
+    if eps <= 0.0:
+        return [0.0, -1e30, 0.0]          # signal termination
 
-    # Check QCD floor — collapse halted at eps_QCD
-    eps_QCD = {'soft': EPS_QCD_MIN, 'mid': EPS_QCD_MID,
-                'stiff': EPS_QCD_MAX}[model]
-
-    # TOV equations
     factor_grav = 1.0 - 2.0 * G_SI * M / (C2 * r)
     if factor_grav <= 0:
-        return [0.0, -1e30, 0.0]  # horizon reached — collapse stops
+        return [0.0, -1e30, 0.0]          # horizon reached — collapse stops
 
-    # Mass equation
     dM_dr  = 4.0 * np.pi * r**2 * eps / C2
 
-    # Pressure equation
-    dP_dr  = -(G_SI / C2) * (eps + P / C2) * (M * C2 + 4 * np.pi * r**3 * P)
+    dP_dr  = -(G_SI / C4) * (eps + P) * (M * C2 + 4.0 * np.pi * r**3 * P)
     dP_dr /= (r**2 * factor_grav)
 
-    # Metric function
-    dPhi_dr = -dP_dr / (eps + P / C2)
+    dPhi_dr = -dP_dr / (eps + P)
 
     return [dM_dr, dP_dr, dPhi_dr]
 
 
 def solve_star(eps_central: float,
                model: str = 'mid',
-               r_max_km: float = 30.0,
+               r_max_km: float = 50.0,
                n_points: int = 5000) -> dict:
     """
     Integrate TOV equations for a given central density.
-
     Integration terminates when P → 0 (stellar surface).
-
-    Parameters
-    ----------
-    eps_central : float   Central energy density [J/m^3]
-    model       : str     EOS model
-    r_max_km    : float   Maximum integration radius [km]
-    n_points    : int     Number of radial grid points
-
-    Returns
-    -------
-    dict with M_solar, R_km, compactness, tidal_deformability
+    Always returns a full dict (with compactness etc.); 'valid' flags success.
     """
+    invalid = {'M_solar': 0.0, 'R_km': 0.0, 'compactness': 0.0,
+               'z_surface': 0.0, 'eps_central': eps_central,
+               'eps_ratio': eps_central / EPS_SAT, 'model': model,
+               'valid': False}
+
     P_central = eos(eps_central, model)
     if P_central <= 0:
-        return {'M_solar': 0, 'R_km': 0, 'valid': False}
+        return invalid
 
-    # Initial conditions (small r expansion to avoid r=0 singularity)
     r_init = 10.0   # 10 m starting radius
     M_init = (4.0/3.0) * np.pi * r_init**3 * eps_central / C2
     y_init = [M_init, P_central, 0.0]
 
     r_span = (r_init, r_max_km * KM)
-    r_eval = np.linspace(r_init, r_max_km * KM, n_points)
 
-    # Termination event: P = 0 (stellar surface)
+    # Termination event: pressure drops to a tiny fraction of central (surface)
+    P_floor = 1e-8 * P_central
     def surface_event(r, y, model=model):
-        return y[1]  # P = 0
+        return y[1] - P_floor
     surface_event.terminal  = True
     surface_event.direction = -1
 
@@ -223,23 +218,26 @@ def solve_star(eps_central: float,
         args=(model,),
         events=surface_event,
         dense_output=False,
-        max_step=100.0,   # 100 m max step
-        rtol=1e-6, atol=1e-10,
+        max_step=50.0,
+        rtol=1e-8, atol=1e-3,
     )
 
     if sol.t_events[0].size > 0:
-        R = sol.t_events[0][0]       # stellar radius [m]
-        M = sol.y_events[0][0][0]    # total mass [kg]
+        R = sol.t_events[0][0]
+        M = sol.y_events[0][0][0]
     elif sol.success:
         R = sol.t[-1]
         M = sol.y[0][-1]
     else:
-        return {'M_solar': 0, 'R_km': 0, 'valid': False}
+        return invalid
 
     M_solar  = M / M_SUN
     R_km     = R / KM
-    compact  = G_SI * M / (C2 * R)   # = GM/c²R, dimensionless
-    z_surf   = 1.0/np.sqrt(1 - 2*compact) - 1  # gravitational redshift
+    if R <= 0 or M <= 0:
+        return invalid
+    compact  = G_SI * M / (C2 * R)
+    arg      = 1.0 - 2.0 * compact
+    z_surf   = (1.0/np.sqrt(arg) - 1.0) if arg > 0 else float('inf')
 
     return {
         'M_solar':      M_solar,
@@ -255,40 +253,19 @@ def solve_star(eps_central: float,
 
 def mass_radius_curve(model: str = 'mid',
                        n_stars: int = 30) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Compute the mass-radius curve for given EOS model.
-
-    Parameters
-    ----------
-    model   : str   EOS model ('soft', 'mid', 'stiff')
-    n_stars : int   Number of central density points
-
-    Returns
-    -------
-    R_km_arr, M_solar_arr : arrays
-    """
-    eps_min = 2.0 * EPS_SAT    # just above QCD floor (no collapse below)
-    eps_max = 20.0 * EPS_SAT
-
-    eps_arr = np.geomspace(eps_min, eps_max, n_stars)
-    M_arr   = []
-    R_arr   = []
-
+    """Mass-radius curve for the given EOS model."""
+    eps_arr = np.geomspace(2.0 * EPS_SAT, 20.0 * EPS_SAT, n_stars)
+    M_arr, R_arr = [], []
     for eps_c in eps_arr:
         result = solve_star(eps_c, model)
         if result['valid'] and result['M_solar'] > 0.1:
             M_arr.append(result['M_solar'])
             R_arr.append(result['R_km'])
-
     return np.array(R_arr), np.array(M_arr)
 
 
 def maximum_mass(model: str = 'mid') -> float:
-    """
-    Find maximum neutron star mass for given EOS (Mmax in M_sun).
-
-    Scans central density to find peak of M(eps_c) curve.
-    """
+    """Maximum mass (M_sun) over the central-density scan."""
     eps_arr = np.geomspace(2*EPS_SAT, 20*EPS_SAT, 50)
     M_max = 0.0
     for eps_c in eps_arr:
@@ -304,35 +281,33 @@ def bh_report() -> None:
     w = 65
     print()
     print('=' * w)
-    print('  SCT Black Hole Interior (TOV + QCD Floor) | Paper 9 | v2.0')
+    print('  SCT Black Hole Interior (TOV + QCD Floor) | Paper 16 | v4.8.4')
     print('=' * w)
     print(f'\n  QCD density floor:')
-    print(f'    ε_nuc (saturation)  = {RHO_SAT:.2e} kg/m³')
-    print(f'    ε_QCD (SCT floor)   = {EPS_QCD_MIN/EPS_SAT:.0f} - '
-          f'{EPS_QCD_MAX/EPS_SAT:.0f} × ε_nuc')
-    print(f'    cs² range           = 0.2-0.8 c²  (QCD causality bounds)')
+    print(f'    rho_nuc (saturation) = {RHO_SAT:.2e} kg/m^3')
+    print(f'    eps_QCD (SCT floor)  = {EPS_QCD_MIN/EPS_SAT:.0f} - '
+          f'{EPS_QCD_MAX/EPS_SAT:.0f} x eps_nuc')
+    print(f'    cs^2 range           = 0.2-0.8 c^2  (QCD causality bounds)')
     print(f'\n  Computing mass-radius for fiducial EOS (mid)...')
 
-    # Test a canonical 1.4 M_sun star
     eps_14 = 4.0 * EPS_SAT
     star   = solve_star(eps_14, 'mid')
-    print(f'\n  1.4 M_sun star (ε_c = 4ε_nuc):')
-    print(f'    M = {star["M_solar"]:.3f} M_sun')
-    print(f'    R = {star["R_km"]:.1f} km')
-    print(f'    C = GM/c²R = {star["compactness"]:.3f}')
-    print(f'    [Λ_tidal ~ 400-650 at 1.4 M_sun from GW170817]')
+    print(f'\n  Representative star (eps_c = 4 eps_nuc, mid EOS):')
+    print(f'    M = {star.get("M_solar", 0):.3f} M_sun')
+    print(f'    R = {star.get("R_km", 0):.1f} km')
+    print(f'    C = GM/c^2R = {star.get("compactness", 0):.3f}')
 
     print(f'\n  Maximum masses by EOS:')
     for model, label in [('soft','Soft'), ('mid','Mid'), ('stiff','Stiff')]:
         try:
             Mmax = maximum_mass(model)
-            print(f'    {label}: M_max ≈ {Mmax:.2f} M_sun')
+            print(f'    {label}: M_max ~ {Mmax:.2f} M_sun')
         except Exception as e:
             print(f'    {label}: Error — {e}')
 
     print(f'\n  Israel-Darmois junction condition:')
     print(f'    P(R_core) = 0  [derived from JC2 — enforces smooth boundary]')
-    print(f'    No singularity: ε never exceeds ε_QCD inside any stable star  ✓')
+    print(f'    No singularity: eps never exceeds eps_QCD inside any stable star')
     print()
 
 

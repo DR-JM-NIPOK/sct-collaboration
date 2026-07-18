@@ -1,34 +1,35 @@
 """
 coherence.py — SCT Coherence Enhancement Framework
-SCT Cosmology Series Papers 6, 7, 13 | DR JM NIPOK, N.J.I.T. (2026)
+SCT Cosmology Series Paper 11; Paper 14; Paper 12 | DR JM NIPOK, N.J.I.T. (2026)
 ORCID: 0009-0006-3940-4450 | License: GPL-3.0
 
 Implements the coherence enhancement A(z) and all derived quantities:
-  - A* = 5.970 (universal virialization amplitude)
+  - A* = 6.173 (universal virialization amplitude)
   - A(N, σ_v, R) pre-virialized coherence
   - Galaxy rotation curves v(r) = sqrt(G M_bar(r) A*/r)
-  - Cluster baryon fraction f_b = 1/A* = 0.1675
+  - Baryon fraction f_b = 1/A* = 0.162
   - Dark energy w_eff(z) from void fraction evolution
   - H0 tension decomposition (KBC void + temporal Λ_eff)
   - Λ_eff(x,t) mesh dissipation
   - Cosmic bulk flow prediction
 
 MATH AUDIT RESULTS (April 2026):
-  A* = 1/f_b = 1/0.1675 = 5.9701  ✓
-  N_eff = e(A*-1) = 13.51          ✓ (back-substitution: 0.00e+00 error)
+  A* = 1/f_b = 1/0.162 = 6.1728  ✓
+  N_coh = e(A*-1) = 14.06          ✓ (back-substitution: 0.00e+00 error)
   C* = e^-1 = 0.3679               ✓ (coherence at virial radius)
-  f_b source: X-COP 12-cluster mean (not Omega_b/Omega_m = 0.142)
+  f_b source: SCT collision-cascade derivation (Route 2A) = 0.162 ± 0.019
   w0 = -0.898  (DESI: -0.79 ± 0.12, consistent at 0.8σ)  ✓
   H0 gap = 3.0 km/s/Mpc; SCT range = 3.4-5.3 (slightly low)  ~
 
-NOTE ON f_b:
-  f_b = 0.1675 is the X-COP cluster hot-gas+stellar baryon fraction.
-  The cosmic baryon fraction Omega_b/Omega_m = 0.045/0.315 = 0.142
-  is a DIFFERENT quantity. Clusters retain a higher fraction of baryons
-  than the cosmic mean because they are gravitational potential wells.
-  SCT uses the cluster-observed f_b to derive A* = 5.970.
-  The collision-cascade derivation (Route 2A) independently gives
-  f_b^SCT = 0.162 ± 0.019, consistent with 0.1675 at 0.3σ.
+NOTE ON f_b (v4.8.3 re-cascade):
+  f_b = 0.162 is the SCT collision-cascade-derived baryon fraction
+  (Route 2A: <f_bound> via the Tinker mass function; Series 2 Paper 1 Sec 11.6),
+  uncertainty +/- 0.019. A* = 1/f_b = 6.173 is therefore a DERIVED
+  quantity, not anchored to a cluster measurement. It is consistent with
+  observed cluster baryon fractions (X-COP, ~0.13-0.16 over R500-R200)
+  and the cosmic value Omega_b/Omega_m ~ 0.156 within uncertainties.
+  (v4.8.1 anchored A* to a measured cluster baryon fraction; the 6.17
+  re-cascade adopts the single derived f_b = 0.162 throughout.)
 """
 
 import numpy as np
@@ -47,19 +48,19 @@ KPC    = 1e3 * PC
 MPC    = 1e6 * PC
 
 # ── Verified SCT constants (math audit April 2026) ─────────────────────────────
-F_B        = 0.1675          # Cluster baryon fraction (X-COP; Papers 6, 13)
-A_STAR     = 1.0 / F_B       # = 5.9701 universal coherence at virialization
-N_EFF_VIR  = np.e * (A_STAR - 1)  # = 13.51 effective coherent sources
+F_B        = 0.162           # SCT cascade-derived baryon fraction (Route 2A; Paper 11; Paper 12; Series 2 Paper 1)
+A_STAR     = 1.0 / F_B       # = 6.1728 universal coherence at virialization
+N_EFF_VIR  = np.e * (A_STAR - 1)  # = 14.06 effective coherent sources (N_coh)
 C_STAR     = np.e**(-1)      # = 0.3679 coherence amplitude at R_vir
-# R_B0 is now the derived constant from Paper 17 v4.0 Section 11.6
+# R_B0 is now the derived constant from Series 2 Paper 1 Section 11.6
 # DO NOT use 0.260 — that was the legacy matched value
-R_B0       = 0.2545          # CAR coherence parameter (DERIVED, Paper 17 v4.8 Section 11.6)
+R_B0       = 0.2545          # CAR coherence parameter (DERIVED, Series 2 Paper 1 Section 11.6)
 
-# Void/virial fractions at z=0 (Papers 7, 11)
+# Void/virial fractions at z=0 (Paper 14; Paper 8)
 F_VIR_0    = 0.17            # Virialized fraction today
 F_VOID_0   = 1.0 - F_VIR_0  # Void fraction today
 
-# H0 tension contributions (Paper 7, Section 3)
+# H0 tension contributions (Paper 14, Section 3)
 DH0_KBC_MIN  = 1.5  # km/s/Mpc — KBC supervoid Λ_eff suppression
 DH0_KBC_MAX  = 2.5
 DH0_TEMP_MIN = 1.9  # km/s/Mpc — temporal Λ_eff evolution
@@ -72,7 +73,7 @@ def f_virial(z: float) -> float:
     """
     Virialized fraction of the universe at redshift z.
 
-    From SCT void/virial decomposition (Paper 7):
+    From SCT void/virial decomposition (Paper 14):
         f_virial(z) = 0.17 × (1+z)^{-1.5}
 
     At z=0: 17% of volume is in virialized structures.
@@ -93,11 +94,11 @@ def A_eff(z: float) -> float:
     From void/virial decomposition:
         A_eff(z) = f_void(z) × 1 + f_virial(z) × A*
 
-    At z=0: A_eff = 0.83 + 0.17 × 5.970 = 1.845
+    At z=0: A_eff = 0.83 + 0.17 × 6.173 = 1.879
     At z→∞: A_eff → 1 (no virialized structures yet)
 
     Note: A_eff is the VOLUME AVERAGE. Inside virialized structures,
-    the local enhancement is A* = 5.970.
+    the local enhancement is A* = 6.173.
     """
     fv = f_virial(z)
     return f_void(z) + fv * A_STAR
@@ -107,7 +108,7 @@ def A_coherence(N: float, sigma_v: float, R: float, M_tot: float) -> float:
     """
     Pre-virialized coherence enhancement A(N, σ_v, R).
 
-    From SCT orbital decay theorem (Paper 6):
+    From SCT orbital decay theorem (Paper 11):
         A = 1 + (N-1) × exp(-σ_v² R / (G M_tot))
 
     where ξ = σ_v² R / (G M_tot) is the virial parameter.
@@ -126,7 +127,7 @@ def A_coherence(N: float, sigma_v: float, R: float, M_tot: float) -> float:
     Limits:
         ξ → 0 (fully virialized): A → 1 + (N-1) → N
         ξ → ∞ (not coherent):     A → 1
-        At virialization (ξ=1, N=N_eff): A → A* = 5.970
+        At virialization (ξ=1, N=N_eff): A → A* = 6.173
     """
     xi = sigma_v**2 * R / (G_SI * M_tot)
     return min(1.0 + (N - 1.0) * np.exp(-xi), A_STAR)
@@ -136,7 +137,7 @@ def A_system(N: float, sigma_v: float, R: float, M_tot: float) -> float:
     """
     System coherence: min(A_coherence, A_virial).
 
-    Rule from Paper 6: A cannot exceed A* regardless of calculation.
+    Rule from Paper 11: A cannot exceed A* regardless of calculation.
     """
     return min(A_coherence(N, sigma_v, R, M_tot), A_STAR)
 
@@ -145,7 +146,7 @@ def C_hat_background() -> float:
     """
     Background coherence enhancement Ĉ_bg.
 
-    From CAR (Paper 16):
+    From CAR (Paper 15):
         Ĉ_bg = 1 + R_b/3 = 1.0848
 
     This is the 8.7% gravitational enhancement from background
@@ -159,11 +160,11 @@ def C_hat_background() -> float:
 def v_circular(r_kpc: float, M_bar_enclosed: float,
                A: float = A_STAR) -> float:
     """
-    SCT circular velocity at radius r (Paper 6, 13).
+    SCT circular velocity at radius r (Paper 11; Paper 12).
 
     v²(r) = G_N M_bar_enc(r) × Ĉ(r) / r
 
-    At virial radius in virialized galaxy: Ĉ = A* = 5.970.
+    At virial radius in virialized galaxy: Ĉ = A* = 6.173.
 
     Parameters
     ----------
@@ -219,7 +220,7 @@ def rotation_curve(r_kpc_arr, M_bar_profile, sigma_v_kms=150.0,
 
 def v_flat_BTF(M_bar_solar: float) -> float:
     """
-    Flat rotation velocity from Baryonic Tully-Fisher (Paper 6).
+    Flat rotation velocity from Baryonic Tully-Fisher (Paper 11).
 
     v_flat^4 = G × M_bar × A* × H0 (MOND-equivalent in SCT at flat limit)
 
@@ -235,7 +236,7 @@ def v_flat_BTF(M_bar_solar: float) -> float:
 
 def cluster_baryon_fraction() -> dict:
     """
-    SCT prediction for cluster baryon fraction (Paper 13).
+    SCT prediction for cluster baryon fraction (Paper 12).
 
     f_b = 1/A* is the fraction of total (coherence-enhanced) mass
     that is in baryons.
@@ -243,17 +244,16 @@ def cluster_baryon_fraction() -> dict:
     Returns dict with prediction and X-COP verification.
     """
     return {
-        'f_b_predicted':    F_B,
-        'A_star':           A_STAR,
-        'f_b_XCOP_obs':     0.1675,
-        'f_b_XCOP_err':     0.006,
-        'sigma_tension':    abs(F_B - 0.1675) / 0.006,
-        'f_b_route2A':      0.162,   # collision-cascade derivation
-        'f_b_route2A_err':  0.019,
-        '_note': ('f_b = 1/A* uses X-COP observed cluster fraction. '
-                  'Independent Route 2A derivation gives 0.162 ± 0.019, '
-                  'consistent at 0.3σ. Cosmic Ω_b/Ω_m = 0.142 is distinct '
-                  '(hot gas+stars in clusters exceed cosmic mean).')
+        'f_b_predicted':    F_B,          # 0.162 cascade-derived (Route 2A)
+        'A_star':           A_STAR,        # 6.173 = 1/f_b
+        'f_b_err':          0.019,
+        'f_b_cosmic_obs':   0.156,         # Planck Omega_b/Omega_m
+        'sigma_vs_cosmic':  abs(F_B - 0.156) / 0.019,
+        'f_b_cluster_obs':  '0.13-0.16',   # X-COP R500-R200 (consistent)
+        '_note': ('f_b = 0.162 is the SCT cascade-derived baryon fraction; '
+                  'A* = 1/f_b = 6.173 is DERIVED. Consistent with cluster '
+                  '(X-COP) and cosmic (Omega_b/Omega_m ~ 0.156) observations '
+                  'within uncertainties (v4.8.3 re-cascade).')
     }
 
 
@@ -261,7 +261,7 @@ def cluster_baryon_fraction() -> dict:
 
 def w_eff_of_z(z: float) -> float:
     """
-    Effective dark energy equation of state from void fraction (Paper 7).
+    Effective dark energy equation of state from void fraction (Paper 14).
 
     w_eff(z) = -1 + (1/3) × d ln(f_void)/d ln(1+z)
 
@@ -281,7 +281,7 @@ def w_eff_of_z(z: float) -> float:
 
 def Lambda_eff_ratio(z: float, x_type: str = 'average') -> float:
     """
-    Effective cosmological constant ratio Λ_eff / Λ_obs (Paper 7).
+    Effective cosmological constant ratio Λ_eff / Λ_obs (Paper 14).
 
     In voids:    Λ_eff > Λ_obs  (enhanced expansion)
     In clusters: Λ_eff ≈ 0      (Birkhoff — no expansion inside virialized)
@@ -304,9 +304,13 @@ def Lambda_eff_ratio(z: float, x_type: str = 'average') -> float:
 
 def H0_tension_decomposition() -> dict:
     """
-    SCT decomposition of the Hubble tension (Paper 7, Section 3).
+    SCT decomposition of the Hubble tension (Paper 14, Section 3).
 
-    Two independent contributions bring H0 from 67.4 toward 70.4+:
+    Two independent late-time contributions raise the LOCAL H0 above the
+    global CMB value (RNLA v2.3 framing):
+
+    Global H0 (CMB θ* + standard r_d=146.8): H0_global ≈ 66.3 km/s/Mpc (PARTIAL).
+    (70.4 is NOT CMB/θ*-derivable and is retired as a headline value.)
 
     1. KBC supervoid: Local observers in an underdense region measure
        a locally enhanced expansion rate. SCT: ΔH0 = 1.5-2.5 km/s/Mpc
@@ -315,24 +319,27 @@ def H0_tension_decomposition() -> dict:
        virialized structures form (f_virial increases). This adds
        ΔH0 = 1.9-2.8 km/s/Mpc.
 
-    Total: ΔH0 = 3.4-5.3 km/s/Mpc
+    Total late-time uplift: ΔH0 = 3.4-5.3 km/s/Mpc, giving a predicted
+    LOCAL H0 ≈ 69.7-71.6 km/s/Mpc — toward the distance-ladder direction.
 
-    AUDIT NOTE: H0_CAR = 70.4 vs H0_Planck = 67.4 → gap = 3.0 km/s/Mpc.
-    This falls just below the SCT minimum (3.4). The CAR value of 70.4
-    is derived from BAO+θ*, not from the tension decomposition. The
-    decomposition is meant to explain why CMB and distance-ladder differ,
-    not to reproduce H0_CAR exactly. H0_SH0ES = 73.0 remains 2.6σ from
-    SCT's 70.4.
+    AUDIT NOTE: this is a LATE-TIME mechanism (it does not change r_d). The
+    Hubble tension is partially addressed, not closed: H0_SH0ES = 73.0 sits
+    ~1.4-3.3 km/s/Mpc above the predicted local band.
     """
     H0_Planck = 67.4
-    H0_SCT    = 70.4
+    H0_global = 66.3                      # CMB θ* + r_d=146.8 (PARTIAL)
     H0_SH0ES  = 73.0
-    delta_sct_planck = H0_SCT - H0_Planck
+    H0_local_min = H0_global + DH0_KBC_MIN + DH0_TEMP_MIN
+    H0_local_max = H0_global + DH0_KBC_MAX + DH0_TEMP_MAX
+    H0_SCT    = 0.5 * (H0_local_min + H0_local_max)   # predicted local midpoint
+    delta_sct_planck = H0_SCT - H0_global
     delta_shoes_planck = H0_SH0ES - H0_Planck
 
     return {
         'H0_Planck_kmsMpc':     H0_Planck,
-        'H0_SCT_kmsMpc':        H0_SCT,
+        'H0_global_kmsMpc':     H0_global,
+        'H0_SCT_kmsMpc':        H0_SCT,       # predicted LOCAL (global + mechanism)
+        'H0_local_range':       (H0_local_min, H0_local_max),
         'H0_SH0ES_kmsMpc':      H0_SH0ES,
         'delta_SCT_Planck':     delta_sct_planck,
         'delta_SH0ES_Planck':   delta_shoes_planck,
@@ -341,9 +348,9 @@ def H0_tension_decomposition() -> dict:
         'DH0_total_range':      (DH0_KBC_MIN + DH0_TEMP_MIN,
                                  DH0_KBC_MAX + DH0_TEMP_MAX),
         'SCT_vs_SH0ES_sigma':   (H0_SH0ES - H0_SCT) / 1.0,
-        '_note': ('SCT bridges Planck→70.4 (3.0 km/s/Mpc). Predicted '
-                  'mechanism range is 3.4-5.3 km/s/Mpc. SCT sits 2.6σ '
-                  'from SH0ES — tension partially but not fully resolved.')
+        '_note': ('SCT global H0≈66.3 (CMB θ*+r_d); late-time void+temporal '
+                  'mechanism (3.4-5.3) raises LOCAL H0 to ≈69.7-71.6. Hubble '
+                  'tension partially addressed, not closed (SH0ES 73.0).')
     }
 
 
@@ -383,13 +390,13 @@ def coherence_report() -> None:
     w = 65
     print()
     print('=' * w)
-    print('  SCT Coherence Framework | Papers 6, 7, 13 | v2.0')
+    print('  SCT Coherence Framework | Paper 11; Paper 14; Paper 12 | v2.0')
     print('=' * w)
     print(f'  {"Constant":<30} {"Value":>12}  {"Paper claim"}')
     print('-' * w)
-    print(f'  {"F_B (cluster baryon frac.)":<30} {F_B:>12.4f}  0.1675 ± 0.006')
-    print(f'  {"A* = 1/F_B":<30} {A_STAR:>12.4f}  5.970 ± 0.21')
-    print(f'  {"N_eff at virialization":<30} {N_EFF_VIR:>12.4f}  13.51')
+    print(f'  {"F_B (cascade-derived)":<30} {F_B:>12.4f}  0.162 ± 0.019')
+    print(f'  {"A* = 1/F_B":<30} {A_STAR:>12.4f}  6.173 ± 0.72')
+    print(f'  {"N_coh at virialization":<30} {N_EFF_VIR:>12.4f}  14.06')
     print(f'  {"C* = e^-1":<30} {C_STAR:>12.6f}  0.3679')
     print(f'  {"Ĉ_bg = 1 + R_b/3":<30} {C_hat_background():>12.4f}  1.0848')
     print('-' * w)
@@ -403,13 +410,13 @@ def coherence_report() -> None:
     print('=' * w)
 
     h0 = H0_tension_decomposition()
-    print(f'\n  H0 tension:  ΔH0(SCT) = {h0["delta_SCT_Planck"]:.1f} km/s/Mpc')
+    print(f'\n  H0: global≈{h0["H0_global_kmsMpc"]:.1f}, local≈{h0["H0_SCT_kmsMpc"]:.1f} (ΔH0={h0["delta_SCT_Planck"]:.1f}) km/s/Mpc')
     print(f'  SCT range:   {h0["DH0_total_range"][0]:.1f}-{h0["DH0_total_range"][1]:.1f} km/s/Mpc')
     print(f'  vs SH0ES:    {h0["SCT_vs_SH0ES_sigma"]:.1f}σ residual tension')
 
     fb = cluster_baryon_fraction()
     print(f'\n  Cluster f_b: {fb["f_b_predicted"]:.4f} predicted vs '
-          f'{fb["f_b_XCOP_obs"]:.4f} X-COP ({fb["sigma_tension"]:.2f}σ)')
+          f'{fb["f_b_cluster_obs"]} X-COP; {fb["sigma_vs_cosmic"]:.2f}σ from cosmic {fb["f_b_cosmic_obs"]:.3f}')
 
     v_test = v_circular(8.0, 5e10)
     print(f'\n  Rotation curve test (r=8 kpc, M=5e10 Msun):')
