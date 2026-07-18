@@ -4,7 +4,7 @@ services:
   sct-car:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.txt
     image: sct-cosmology:latest
     container_name: sct-car-analysis
     volumes:
@@ -24,7 +24,7 @@ services:
   sct-figures:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.txt
     image: sct-cosmology:latest
     container_name: sct-figures
     volumes:
@@ -37,7 +37,7 @@ services:
   sct-verify:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.txt
     image: sct-cosmology:latest
     container_name: sct-verify
     command: >

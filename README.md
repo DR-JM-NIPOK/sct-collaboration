@@ -31,18 +31,18 @@ The CAR master equation for the primordial plasma sound speed:
 c_s²(z) = [1 + R_b(z)] / 3       R_b(z) = R_b0 / (1+z)
 ```
 
-where `R_b0 = 0.257 ± 0.032` is DERIVED from SO(3) cascade geometry and QCD
-Israel-Darmois junction conditions (Paper 17 v4.0 Section 11.6 — no observational input).
+where `R_b0 = 0.2545 ± 0.032` is DERIVED from SO(3) cascade geometry and QCD
+Israel-Darmois junction conditions (Series 2 Paper 1 Section 11.6 — no observational input).
 DO NOT compute R_b0 from Ω_b h² / Ω_γ h².
 
 This single relation — **zero free parameters** — predicts:
 
 | Quantity | CAR Prediction | Observation | Tension |
 |---|---|---|---|
-| r_d | 149.1 ± 0.3 Mpc | DESI-DR2: 147.0 ± 1.0 Mpc | 2.1σ |
-| H₀ | 70.4 ± 0.4 km/s/Mpc | SH0ES: 73.0 ± 1.0 / Planck: 67.4 ± 0.5 | <2σ both |
+| r_d (standard) | 146.8 ± 5 Mpc | DESI-DR2: 147.0 ± 1.0 Mpc | 0.2σ |
+| H₀ (global) | 66.3 km/s/Mpc | Planck: 67.4 ± 0.5 | ~2σ; local→70-73 via void+temporal |
 | S₈ | 0.783 ± 0.015 | DES-Y6: 0.780 ± 0.012 | <0.2σ |
-| b_IA | 1.087 ± 0.002 | DES-Y6 fit: 1.08 ± 0.04 | <0.2σ |
+| b_IA | 1.0848 ± 0.011 | DES-Y6 fit: 1.08 ± 0.04 | <0.2σ |
 
 ---
 
@@ -100,7 +100,7 @@ sct-collaboration/
 │   └── mock_data_generator.py   ← Generate mock data for testing
 │
 ├── docker/                  ← Container for full reproducibility
-│   ├── Dockerfile
+│   ├── Dockerfile.txt
 │   └── docker-compose.yml
 │
 └── tests/                   ← Unit and integration tests
@@ -129,12 +129,12 @@ Expected output:
 ========================================================
   Quantity               CAR          ΛCDM         Δ
 --------------------------------------------------------
-  R_b0                  0.2570       0.2570    (derived, Paper 17 v4.0)
-  c_s²(z→∞)  [×c²]     0.41900      0.27895  +0.14005  (derived R_b=0.257)
-  r_d  [Mpc]           149.10       150.00     -0.90
-  H₀  [km/s/Mpc]        70.40        67.40     +3.00
+  R_b0                  0.2545         —      (derived, Series 2 Paper 1)
+  c_s²(z=0)  [×c²]      0.41817      0.33333  +0.08484  (late-time; R_b=0.2545)
+  r_d  [Mpc]           146.80       147.10     -0.30   (standard horizon)
+  H₀  [km/s/Mpc]        66.30        67.40     -1.10   (global; θ*+r_d)
   S₈  (numerical)        0.783        0.832    -0.049
-  b_IA                   1.087        1.000    +0.087
+  b_IA                   1.0848       1.000    +0.0848
 ```
 
 #### Option 2: Full Analysis (requires CAMB/CLASS/PolyChord)
@@ -181,7 +181,7 @@ The expected χ²/dof values for the CAR model against each dataset:
 ### License
 
 This repository is licensed under the **GNU General Public License v3.0** (GPL-3.0).
-See [LICENSE](LICENSE) for full terms.
+See [LICENSE.txt](LICENSE.txt) for full terms.
 
 The accompanying paper is licensed under **CC BY-NC-SA 4.0**.
 
