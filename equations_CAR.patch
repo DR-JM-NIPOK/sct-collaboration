@@ -1,68 +1,26 @@
 # ===========================================================================
-# CAR modification for CAMB Boltzmann solver  (v4.8.1 corrected)
+# DEPRECATED / RETIRED PATCH — DO NOT APPLY  (RNLA v2.3, v4.8.4, June 2026)
 # ===========================================================================
-# This patch implements the Codified Acoustic Relation (CAR):
+# This patch previously REPLACED CAMB's recombination-epoch sound speed with
+# the CAR formula cs2 = (1 + R_b)/3 and claimed it yields r_drag ~ 161.4 Mpc.
 #
-#     Standard ΛCDM:  cs²(z) = 1 / [3 (1 + R(z))]   R = 3·ρ_b/(4·ρ_γ)
-#     CAR ansatz   :  cs²(z) = (1 + R_b(z)) / 3      R_b = R_B_DERIVED/(1+z)
+# THAT IS A CATEGORY ERROR and the patch is retired:
 #
-# Critical: R_b ≠ R. R_b is the SCT-derived coherence ratio, NOT the
-# standard density ratio. R_B_DERIVED = 0.2545 ± 0.032 from Paper 17
-# v4.8 Section 11.6 (SO(3) cascade + QCD junction).
+#   * The CAR enhanced sound speed (cs2 = (1 + R_b)/3, R_b0 = 0.2545) is a
+#     LATE-TIME coherent-sector quantity. It sets S8 and the IA bias b_IA.
+#     It is NOT the recombination acoustic speed.
+#   * At recombination R_b -> 0, so (1 + R_b)/3 -> 1/3 (pure-radiation speed),
+#     which omits baryon loading and inflates the horizon to the retired
+#     161.4 / 165 / 178 Mpc range.
+#   * The recombination/drag sound horizon is STANDARD, fixed by omega_b and
+#     omega_m: r_drag ~ 146.8 Mpc, r_*(z*) ~ 144.4 Mpc (Planck-consistent,
+#     and consistent with DESI-DR2 BAO 147 +/- 1 Mpc).
 #
-# v4.8.1 audit: Earlier versions of this patch incorrectly used the standard
-# density ratio R in the CAR formula, producing superluminal cs² at z=0 and
-# r_drag ≈ 182 Mpc. The corrected formulation below uses R_b(z) properly and
-# gives r_drag ≈ 161.4 Mpc at H0=70.4, matching sct_core.py's canonical output.
+# ACTION: do NOT patch CAMB's recombination cs2. Leave CAMB's standard
+# photon-baryon acoustics untouched (r_drag ~ 146.8 Mpc). The CAR coherent
+# sound speed belongs in the LATE-TIME growth / weak-lensing / IA sector; see
+# camb/equations_car.f90 (module CAR_corrections) for the late-time functions.
 #
-# Author : DR JM NIPOK
-# CAMB version tested: 1.5.x and 1.6.x
-# Apply with: patch -p1 < equations_CAR.patch
+# This file intentionally contains NO diff hunks.
+# Author : DR JM NIPOK | License: GPL-3.0
 # ===========================================================================
-
---- a/fortran/equations.f90
-+++ b/fortran/equations.f90
-@@ -1,6 +1,15 @@
-+! CAR modification — Codified Acoustic Relation sound speed (v4.8.1)
-+! ===========================================================================
-+! Original: cs2 = 1 / (3*(1+R))           [standard ΛCDM, R = 3·ρ_b/(4·ρ_γ)]
-+! CAR    : cs2 = (1 + R_b(z)) / 3         [R_b = R_B_DERIVED/(1+z), DERIVED]
-+!
-+! R_b is NOT the standard density ratio. R_b is the SCT-derived coherence
-+! ratio fixed by SO(3) cascade geometry and QCD junction conditions
-+! (Paper 17 v4.8 §11.6). At z_drag, R_b ≈ 0, recovering the photon limit.
-+! At z=0, R_b = 0.2545, giving cs² = 0.4182.
-+!
-+! Reference: NIPOK, SCT Series Paper #16, DOI:10.13140/RG.2.2.10321.29288
-
- ! In subroutine derivs (or ThermoData_Get, depending on CAMB version):
- ! Locate the calculation of cs2 (sound speed squared) for the baryon-photon fluid.
- ! The standard CAMB code reads (approximately):
- !
- !   R = 3*rhob / (4*rhog)
- !   cs2 = 1._dl / (3*(1._dl + R))
- !
--! Replace with the CAR master equation:
-+! Replace with the CAR master equation. CRITICAL: do NOT reuse the standard R
-+! symbol with the CAR formula — that produces unphysical cs > c. Use the
-+! SCT-derived R_b(z) below.
-
-+  ! ── CAR canonical sound speed (v4.8.1 corrected) ───────────────────────
-+  ! R_B_DERIVED = 0.2545 from Paper 17 v4.8 §11.6 (NOT a density ratio)
-+  ! At z_drag ≈ 1060: cs² ≈ 1/3 (photon limit recovered)
-+  ! At z=0:           cs² = 0.4182  (26% enhancement over ΛCDM)
-+  real(dl), parameter :: R_B_DERIVED_CAR = 0.2545_dl
-+  R_b_CAR = R_B_DERIVED_CAR * a              ! = R_B_DERIVED/(1+z) since a=1/(1+z)
-+  cs2     = (1._dl + R_b_CAR) / 3._dl
-+  ! ────────────────────────────────────────────────────────────────────────
-
-   ! Note: The standard density ratio R = 3·grho_b/(4·grho_g) is still
-   ! used elsewhere in CAMB (e.g., photon-baryon momentum coupling and
-   ! recombination drag visibility). DO NOT replace those uses. Only the
-   ! cs2 calculation should change. Variable name R_b_CAR is used here to
-   ! avoid collision with CAMB's internal R variable.
-
-   ! Verification: After applying this patch and rebuilding, running CAMB at
-   !   H0=70.4 km/s/Mpc, ombh2=0.0222, omch2=Ωm·h² - ombh2, Ωm=0.315
-   ! should produce derived rdrag ≈ 161.4 Mpc (vs ΛCDM unmodified 144 Mpc).
-   ! If rdrag ≈ 144 or 150, the patch did not take effect; rebuild required.

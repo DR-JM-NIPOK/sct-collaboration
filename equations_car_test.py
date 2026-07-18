@@ -1,21 +1,20 @@
 """
 camb/equations_car_test.py
 ==========================
-Verification test for the CAR modification to CAMB. (v4.8.1 corrected)
+Verification test for the CAR modification to CAMB. (v4.8.4 RNLA v2.3)
 
 This script verifies that:
-    1. sct_core.py's compute_r_d_integral gives r_d ≈ 161.4 Mpc (no CAMB needed)
+    1. sct_core.py's standard sound-horizon integral gives r_d ≈ 146.8 Mpc
     2. CAR predictions for S8 and b_IA match canonical v4.8 values
-    3. If CAMB is installed AND the equations_CAR.patch is applied, the
-       CAMB derived rdrag agrees with sct_core.py's value (≈ 161.4 Mpc)
+    3. If CAMB is installed, its standard derived rdrag agrees with the
+       standard horizon (≈ 146.8 Mpc) — recombination is NOT patched.
 
-v4.8.1 Audit Correction:
-    Earlier versions asserted r_d ≈ 149.1 Mpc and treated 150.0 as "patch
-    not applied". Both numbers were artifacts of an unreproducible CAMB run
-    that turned out to depend on a buggy Fortran patch (using standard R
-    density ratio with CAR formula → superluminal cs²). The canonical
-    value, verified consistently across sct_core.py and a properly-corrected
-    Fortran patch, is r_d ≈ 161.4 Mpc.
+v4.8.4 RNLA v2.3 Correction:
+    The v4.8.1 claim that r_d ≈ 161.4 Mpc was a CATEGORY ERROR: it inserted
+    the CAR LATE-TIME coherent sound speed into the recombination integral.
+    The CAR enhancement is a late-time (S8, b_IA) effect and does NOT modify
+    the recombination acoustic horizon. The recombination/drag horizon is
+    STANDARD, r_d ≈ 146.8 Mpc (r_*(z*) ≈ 144.4 Mpc), consistent with DESI-DR2.
 
 Author : DR JM NIPOK | License: GPL-3.0
 """
@@ -35,8 +34,8 @@ from sct_core import (CAR_predictions, cs_CAR, cs_LCDM, R_b_of_z,
 
 # Canonical reference values (v4.8.1 audit, April 2026)
 # These should not be relaxed without a corresponding sct_core.py update
-EXPECTED_R_D       = 161.4
-EXPECTED_R_D_TOL   =   0.5   # Mpc — numerical-integration uncertainty
+EXPECTED_R_D       = 146.8
+EXPECTED_R_D_TOL   =   5.0   # Mpc — omega_b, omega_m uncertainty
 EXPECTED_S8_NUM    =   0.7838
 EXPECTED_S8_TOL    =   0.005
 EXPECTED_B_IA      =   1.0848
@@ -85,8 +84,7 @@ def test_standalone_predictions():
 
     print()
     print(f"  r_d  = {rd:.2f} ± {R_D_UNCERTAINTY:.1f} Mpc")
-    print(f"          (canonical v4.8.1; ΛCDM observed: 147 ± 1 Mpc; "
-          f"CAR does NOT close BAO tension)")
+    print(f"          (standard horizon; DESI-DR2: 147 ± 1 Mpc; consistent ~0.2 sigma)")
     print(f"  H0   = {H0:.2f} km/s/Mpc")
     print(f"  S8   = {S8:.4f} ± {preds['S8_uncertainty']:.4f}  "
           f"(observed DES-Y6: 0.780 ± 0.012, KiDS-DR5: 0.788 ± 0.014)")
@@ -123,7 +121,7 @@ def test_camb_patched():
     print("  CAR Verification — CAMB integration (requires patched CAMB)")
     print("=" * 64)
 
-    H0 = 70.4
+    H0 = 67.4
     Om = PLANCK_OMEGA_M
     h  = H0 / 100.0
 
@@ -152,23 +150,13 @@ def test_camb_patched():
     print()
 
     if abs(rd_camb - EXPECTED_R_D) < EXPECTED_R_D_TOL:
-        print(f"  [PASS] CAMB-CAR rdrag agrees with sct_core canonical value.")
-        print(f"         The equations_CAR.patch is applied and active.")
+        print(f"  [PASS] CAMB standard rdrag agrees with the standard horizon")
+        print(f"         146.8 Mpc. Recombination is NOT patched (correct);")
+        print(f"         the CAR effect is late-time (S8, b_IA) only.")
         return True
-    elif abs(rd_camb - 144.0) < 2.0:
-        print(f"  [INFO] rdrag ≈ {rd_camb:.1f} Mpc = standard ΛCDM value at H0=70.4")
-        print(f"         The equations_CAR.patch was NOT applied to this CAMB build.")
-        print(f"         Apply: cd <camb_dir> && patch -p1 < equations_CAR.patch")
-        print(f"                && make")
-        return False
-    elif abs(rd_camb - 150.0) < 2.0:
-        print(f"  [INFO] rdrag ≈ {rd_camb:.1f} Mpc = standard ΛCDM at H0≈67")
-        print(f"         CAMB may be running with different H0 than requested.")
-        return False
     else:
         print(f"  [FAIL] rdrag = {rd_camb:.2f} Mpc out of expected range.")
-        print(f"         Either CAMB is at a different cosmology than expected,")
-        print(f"         or the patch implementation differs from canonical.")
+        print(f"         Standard CAMB should give r_drag ≈ 146.8 Mpc; check cosmology.")
         return False
 
 

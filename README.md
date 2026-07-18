@@ -12,8 +12,11 @@ Relation (CAR) sound speed within the CAMB Boltzmann solver.
 | Standard ΛCDM | `cs² = 1 / (3 × (1 + R_b))` |
 | **CAR** | **`cs² = (1 + R_b) / 3`** |
 
-This single modification shifts the sound horizon from 150.0 Mpc (Planck ΛCDM)
-to 149.1 ± 0.3 Mpc, resolving the DESI-DR2 tension.
+This modification is a **late-time** coherent-sector effect (it sets S8 and
+b_IA). It does **not** modify the recombination sound horizon, which stays
+**standard** (r_drag ≈ 146.8 Mpc, consistent with DESI-DR2 BAO 147 ± 1 Mpc).
+RNLA v2.3 (June 2026): the earlier "shifts r_d to 149.1/161.4 Mpc" claim was a
+category error (late-time c_s applied at recombination) and is retired.
 
 ## Installation
 
@@ -36,9 +39,9 @@ python camb/equations_car_test.py
 
 ```
 CAMB-CAR Sound horizon test
-  Standard CAMB r_d : 150.00 Mpc
-  CAR-modified r_d  : 149.10 Mpc
-  Δr_d              : -0.90 Mpc
+  Standard CAMB r_drag : 146.80 Mpc   (recombination horizon — UNCHANGED by CAR)
+  r_*(z*)              : 144.40 Mpc
+  DESI-DR2 r_d         : 147.0 ± 1.0 Mpc   (consistent, ~0.2 sigma)
   PASS
 ```
 
