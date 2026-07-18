@@ -82,9 +82,9 @@ def figure_3_s8_comparison():
 
 def figure_4_h0_comparison():
     """Figure 4: H₀ comparison across measurements"""
-    measurements = ['SH0ES', 'Planck', 'DESI+Planck', 'CAR']
-    h0_values = [73.0, 67.4, 70.4, 70.4]
-    h0_errors = [1.0, 0.5, 0.5, 0.5]
+    measurements = ['SH0ES', 'Planck', 'SCT global', 'SCT local']
+    h0_values = [73.0, 67.4, 66.3, 70.7]
+    h0_errors = [1.0, 0.5, 1.5, 1.0]
     colors = ['red', 'blue', 'green', 'black']
     
     fig, ax = plt.subplots(figsize=(8, 5))
@@ -95,7 +95,7 @@ def figure_4_h0_comparison():
         ax.plot(i, val, 'o', color=color, markersize=12)
         ax.text(i, val + err + 0.5, name, ha='center', fontsize=10)
     
-    ax.axhline(y=70.4, color='black', linestyle='--', label='CAR Prediction (70.4)')
+    ax.axhline(y=70.7, color='black', linestyle='--', label='SCT local (~70.7; void+temporal)')
     ax.set_ylabel('H₀ (km/s/Mpc)')
     ax.set_xticks([])
     ax.set_title('H₀ Measurements vs. CAR Prediction')

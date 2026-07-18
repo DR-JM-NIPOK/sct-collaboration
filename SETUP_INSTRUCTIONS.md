@@ -1,9 +1,9 @@
 # SCT Cosmology — Complete Setup Instructions
 
 ## WARNING — R_b = 0.260 MUST NOT BE USED AS INPUT
-As of Paper 17 v4.0 Section 11.6, R_b = 0.257 +/- 0.032 is DERIVED
+As of Series 2 Paper 1 Section 11.6, R_b = 0.2545 +/- 0.032 is DERIVED
 from SO(3) cascade geometry and QCD junction conditions. The value 0.260
-is the legacy matched reference only. All code uses R_B_DERIVED = 0.257.
+is the legacy matched reference only. All code uses R_B_DERIVED = 0.2545.
 DOI: 10.13140/RG.2.2.14355.03366
 
 ## Overview
@@ -42,12 +42,12 @@ python sct_core.py
 ========================================================
   Quantity               CAR          ΛCDM         Δ
 --------------------------------------------------------
-  R_b0                  0.2570       0.2570    (derived, Paper 17 v4.0 Section 11.6)
-  c_s²(z→∞)  [×c²]     0.41900      0.27895  +0.14005  (derived R_b=0.257)
-  r_d  [Mpc]           149.10       150.00     -0.90
-  H₀  [km/s/Mpc]        70.40        67.40     +3.00
+  R_b0                  0.2545         —      (derived, Series 2 Paper 1 Section 11.6)
+  c_s²(z=0)  [×c²]      0.41817      0.33333  +0.08484  (late-time coherent; R_b=0.2545)
+  r_d  [Mpc]           146.80       147.10     -0.30   (standard photon-baryon horizon)
+  H₀  [km/s/Mpc]        66.30        67.40     -1.10   (global; θ*+r_d)
   S₈  (numerical)        0.783        0.832    -0.049
-  b_IA                   1.087        1.000    +0.087
+  b_IA                   1.0848       1.000    +0.0848
 ```
 
 ---
@@ -162,7 +162,7 @@ docker run sct-cosmology
 docker run -v $(pwd)/output:/output sct-cosmology \
     python figures/make_all_figures.py --output /output/figures/
 
-# Full analysis (requires PolyChord in container — see docker/Dockerfile)
+# Full analysis (requires PolyChord in container — see docker/Dockerfile.txt)
 docker-compose -f docker/docker-compose.yml run sct-car
 ```
 
@@ -174,10 +174,10 @@ After running the full analysis:
 
 | Quantity | CAR Prediction | Observation | Tension |
 |---|---|---|---|
-| r_d | 149.1 ± 0.3 Mpc | DESI-DR2: 147.0 ± 1.0 | 2.1σ |
-| H₀ | 70.4 ± 0.4 km/s/Mpc | SH0ES: 73.0 ± 1.0 | 2.4σ |
+| r_d (standard) | 146.8 ± 5 Mpc | DESI-DR2: 147.0 ± 1.0 | 0.2σ |
+| H₀ (global) | 66.3 km/s/Mpc | Planck: 67.4 ± 0.5 | ~2σ; local→70-73 via void+temporal |
 | S₈ | 0.783 ± 0.015 | DES-Y6: 0.780 ± 0.012 | 0.2σ |
-| b_IA | 1.087 ± 0.002 | DES-Y6: 1.08 ± 0.04 | 0.2σ |
+| b_IA | 1.0848 ± 0.011 | DES-Y6: 1.08 ± 0.04 | 0.1σ |
 | ln Z (CAR) | −1248.52 ± 0.04 | — | — |
 | Δln B | −3.80 ± 0.40 | — | 44:1 odds for CAR |
 
@@ -197,7 +197,7 @@ export PYTHONPATH=/path/to/sct-collaboration:$PYTHONPATH
 which mpif90 && mpif90 --version
 ```
 
-**CAMB returns r_d ≈ 150 Mpc (not 149.1)**
+**CAMB returns the standard r_d ≈ 146.8 Mpc**
 → The CAR patch was not applied. Re-apply `equations_CAR.patch` and rebuild.
 
 **Tests fail on `test_conservative_evidence`**
