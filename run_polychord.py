@@ -7,7 +7,7 @@ Implements the full joint likelihood combining all four datasets:
     DESI-DR2 BAO + Planck PR4 CMB + DES-Y6 3×2pt + HSC-Y3 + KiDS-DR5
 
 Parameter space:
-    CAR  : Ω_m ∈ [0.1, 0.5]  (1 free parameter — R_b=0.2545 derived, Paper 17 v4.8)
+    CAR  : Ω_m ∈ [0.1, 0.5]  (1 free parameter — R_b=0.2545 derived, Series 2 Paper 1)
     ΛCDM : Ω_b h², Ω_c h², 100θ_s, τ, ln(10¹⁰A_s), n_s  (6 cosmological)
            + up to 42 nuisance parameters (IA, photo-z, baryonic feedback)
 
@@ -63,7 +63,7 @@ def build_combined_likelihood(data: str, verbose: bool = False):
         theta = [Omega_m, R_b]
         """
         Omega_m = theta[0]  # Only 1 sampled parameter
-        # R_b is a derived constant (Paper 17 v4.0 Section 11.6)
+        # R_b is a derived constant (Series 2 Paper 1 Section 11.6)
         from sct_core import R_B_DERIVED
         try:
             params = CAR_predictions(
@@ -86,11 +86,11 @@ def prior_transform_car(cube):
     Map unit hypercube to CAR prior.
     theta[0] = Omega_m  ~ Uniform[0.1, 0.5]
     theta[0] = Omega_m  ~ Uniform[0.1, 0.5]
-    R_b is now a DERIVED constant = 0.2545 +/- 0.032 (Paper 17 v4.8 Section 11.6)
+    R_b is now a DERIVED constant = 0.2545 +/- 0.032 (Series 2 Paper 1 Section 11.6)
     R_b is NOT sampled — this closes the circularity in the Bayes factor.
     """
     from scipy.stats import norm
-    # CAR has 1 free parameter (Omega_m). R_b=0.2545 is derived (Paper 17 v4.8 Section 11.6)
+    # CAR has 1 free parameter (Omega_m). R_b=0.2545 is derived (Series 2 Paper 1 Section 11.6)
     theta = np.zeros(1)
     theta[0] = 0.1 + cube[0] * 0.4  # Omega_m: uniform [0.1, 0.5]
     return theta
