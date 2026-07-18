@@ -62,7 +62,7 @@ class CombinedLikelihood:
         ----------
         Omega_m : float   Total matter density
         R_b     : float   CAR coherence parameter. Defaults to R_B_DERIVED=0.2545
-                          (Paper 17 v4.0 Section 11.6 — derived, not matched).
+                          (Series 2 Paper 1 Section 11.6 — derived, not matched).
                           DO NOT pass 0.260 — that was the legacy matched value.
 
         Returns
@@ -71,12 +71,12 @@ class CombinedLikelihood:
         """
         from sct_core import R_B_DERIVED
         if R_b is None:
-            R_b = R_B_DERIVED  # 0.2545 derived (Paper 17 v4.8 Section 11.6)
+            R_b = R_B_DERIVED  # 0.2545 derived (Series 2 Paper 1 Section 11.6)
         preds = CAR_predictions(Omega_m=Omega_m)
 
         # Extract parameters — use CAMB-verified values
-        r_d        = preds['r_d_Mpc']          # 161.4 Mpc (canonical CAR, v4.8.1 audit)
-        H0         = preds['H0_km_s_Mpc']       # 70.4 (CAMB)
+        r_d        = preds['r_d_Mpc']          # 146.8 Mpc (standard horizon, RNLA v2.3)
+        H0         = preds['H0_km_s_Mpc']       # 66.3 (global; theta*+r_d)
         S8         = preds['S8']                # 0.783 (analytic, verified)
         IA_bias    = preds['IA_bias']            # 1.0848 (analytic, v4.8.1 audit)
         theta_star = preds['theta_star']         # 1.04105 (100×θ*, not radians)

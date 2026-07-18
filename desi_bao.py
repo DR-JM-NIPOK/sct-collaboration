@@ -51,12 +51,12 @@ class DESI_BAO_Likelihood:
             self.using_mock    = False
         else:
             # ── MOCK DATA — FOR CODE TESTING ONLY ─────────────────────────
-            # Uses ΛCDM fiducial r_d = 147.1 Mpc (NOT CAR's 161.4 Mpc — v4.8.1 audit).
-            # Using CAR's own r_d here would make chi-squared ≈ 0 by
-            # construction and produce circular Bayesian evidence.
+            # Uses ΛCDM fiducial r_d = 147.1 Mpc. CAR's standard r_d = 146.8 Mpc
+            # is consistent with this fiducial (RNLA v2.3). The mock uses the
+            # ΛCDM fiducial (not CAR's own r_d) to avoid circular evidence.
             import warnings
             warnings.warn(
-                "DESI: using ΛCDM-fiducial mock data (r_d=147.1 Mpc). "
+                "DESI: using LCDM-fiducial mock data (r_d=147.1 Mpc). "
                 "Run data/download_data.sh to get real DESI-DR2 data.",
                 UserWarning, stacklevel=2
             )

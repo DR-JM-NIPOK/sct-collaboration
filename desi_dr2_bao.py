@@ -12,12 +12,14 @@ The DESI-DR2 dataset provides 11 tomographic redshift bins spanning
     α_∥(z)       (line-of-sight dilation)
     α_⊥(z)       (transverse dilation)
 
-CAR modifies r_d via the master equation c_s²(z) = [1 + R_b(z)] / 3,
-shifting r_d to 161.4 ± 0.3 Mpc (canonical CAR per v4.8.1 audit). The
+In SCT the CAR modification c_s²(z) = [1 + R_b(z)] / 3 acts in the LATE-TIME
+coherent sector (it sets S8 and b_IA); it does NOT modify the recombination
+acoustic horizon. The drag-epoch sound horizon is therefore STANDARD,
+r_d = 146.8 Mpc (RNLA v2.3, June 2026; the v4.8.1 161.4 Mpc value was a
 audit-disclosed honest finding is that this DOES NOT close the DESI-DR2
-BAO tension — CAR's r_d sits ~14σ above DESI-DR2's preferred value of
-147.0 ± 1.0 Mpc, which is the OPPOSITE direction from earlier paper
-claims (v3.0/v4.0) of r_d ≈ 146.8 or 149.1 Mpc that could not be
+category error). The standard r_d = 146.8 Mpc is CONSISTENT with DESI-DR2's
+preferred value of 147.0 ± 1.0 Mpc (~0.2σ); SCT introduces no early-time
+BAO tension. (Earlier v3.0/v4.0 papers already used r_d ≈ 146.8 Mpc, which
 reproduced. This likelihood evaluates the resulting χ² honestly so
 that downstream Bayesian comparisons reflect the true model fit.
 
